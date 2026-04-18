@@ -16,6 +16,7 @@ async def analyze_reviews(
     restaurant_name: str,
     cuisine: str,
     reviews: list[dict],
+    gemini_api_key: str,
 ) -> ReviewAnalysisResult:
     if not reviews:
         return ReviewAnalysisResult(
@@ -35,5 +36,5 @@ async def analyze_reviews(
         reviews_json=json.dumps(reviews, ensure_ascii=True),
     )
 
-    payload = await generate_json_with_gemini(prompt=prompt)
+    payload = await generate_json_with_gemini(prompt=prompt, api_key=gemini_api_key)
     return ReviewAnalysisResult.model_validate(payload)

@@ -1,4 +1,3 @@
-import os
 from typing import Any
 
 import httpx
@@ -14,14 +13,14 @@ async def retrieve_restaurant_candidates(
     lat: float,
     lng: float,
     cuisine: str,
+    maps_api_key: str,
     limit: int = 10,
 ) -> list[PlaceResult]:
-    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
-    if not api_key:
+    if not maps_api_key.strip():
         raise ValueError("GOOGLE_MAPS_API_KEY is required.")
 
     async with httpx.AsyncClient(timeout=20.0) as client:
-        nearby_payload = await _nearby_search(client, api_key, lat, lng, cuisine)
+        nearby_payload = await _nearby_search(client, maps_api_key, lat, lng, cuisine)
         nearby_results = nearby_payload.get("results", [])[:limit]
 
         detailed_places: list[PlaceResult] = []
@@ -29,7 +28,7 @@ async def retrieve_restaurant_candidates(
             place_id = item.get("place_id")
             if not place_id:
                 continue
-            details = await _place_details(client, api_key, place_id)
+            details = await _place_details(client, maps_api_key, place_id)
             normalized = _normalize_place(details.get("result", {}))
             if normalized:
                 detailed_places.append(normalized)

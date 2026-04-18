@@ -1,4 +1,4 @@
-from app.models.schemas import DossierResult, RankedResult, ScoreBreakdown, SearchRequest
+from app.models.schemas import DossierResult, RankedResult, ScoreBreakdown, SearchQuery
 
 
 def _budget_to_price_level(budget: str) -> int:
@@ -11,7 +11,7 @@ def _budget_to_price_level(budget: str) -> int:
     return mapping.get(budget.lower(), 2)
 
 
-def rank_dossiers(dossiers: list[DossierResult], request: SearchRequest) -> list[RankedResult]:
+def rank_dossiers(dossiers: list[DossierResult], request: SearchQuery) -> list[RankedResult]:
     ranked: list[RankedResult] = []
     target_price = _budget_to_price_level(request.budget)
     cuisine_lower = request.cuisine.lower()

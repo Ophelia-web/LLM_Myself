@@ -5,14 +5,41 @@
 
 body {
   margin: 0;
-  background: #f4f6fb;
+  background: radial-gradient(circle at top left, #fff7ed 0%, #f4f6fb 45%, #eef2ff 100%);
   color: #1a1d26;
 }
 
 .container {
   max-width: 920px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 28px 24px 36px;
+}
+
+.hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d97706;
+  font-weight: 700;
+}
+
+.food-emoji {
+  font-size: 1.6rem;
+  user-select: none;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #ffd8a8;
+  background: #fff9f1;
 }
 
 h1 {
@@ -29,9 +56,35 @@ h1 {
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   background: #ffffff;
-  border: 1px solid #dde2ee;
+  border: 1px solid #e6d8c4;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 10px 28px rgba(23, 35, 79, 0.06);
+}
+
+.api-section {
+  grid-column: 1 / -1;
+  margin: 0;
+  border: 1px solid #f0d2ad;
+  background: #fff8ef;
   border-radius: 12px;
-  padding: 14px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.api-section legend {
+  padding: 0 6px;
+  color: #9a3412;
+  font-weight: 700;
+}
+
+.hint {
+  margin: 0;
+  grid-column: 1 / -1;
+  color: #7c2d12;
+  font-size: 0.88rem;
 }
 
 .search-form label {
@@ -44,14 +97,14 @@ h1 {
 .search-form input,
 .search-form select,
 .search-form button {
-  border: 1px solid #c7cfdf;
+  border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 0.95rem;
   padding: 10px;
 }
 
 .search-form button {
-  background: #315efb;
+  background: linear-gradient(135deg, #f97316, #ea580c);
   color: #fff;
   border: none;
   cursor: pointer;
@@ -59,12 +112,13 @@ h1 {
 }
 
 .search-form button:hover {
-  background: #294ed0;
+  background: linear-gradient(135deg, #ea580c, #c2410c);
 }
 
 .status {
   margin: 16px 0;
   font-weight: 500;
+  min-height: 1.2rem;
 }
 
 .results {
@@ -74,10 +128,10 @@ h1 {
 
 .card {
   background: #fff;
-  border: 1px solid #dde2ee;
-  border-radius: 12px;
-  padding: 14px;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.02);
+  border: 1px solid #eddcc7;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
 }
 
 .card h3 {
@@ -95,7 +149,7 @@ h1 {
 .empty,
 .error {
   background: #fff;
-  border: 1px solid #dde2ee;
+  border: 1px solid #eddcc7;
   border-radius: 12px;
   padding: 12px;
 }

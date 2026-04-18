@@ -57,18 +57,13 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-## Environment variables
+## API key handling
 
-Create `.env` in `project/`:
+No server-side API key env vars are required for normal usage.
 
-```bash
-cp .env.example .env
-```
-
-Set:
-
-- `GOOGLE_MAPS_API_KEY` (Geocoding + Places enabled)
-- `GEMINI_API_KEY`
+Users enter their own `GOOGLE_MAPS_API_KEY` and `GEMINI_API_KEY` in the web form.
+The frontend sends keys with each `/api/search` request, and the backend does not echo
+them back in the response payload.
 
 ## Run locally
 
@@ -87,12 +82,17 @@ Health: `GET /health`
 
 ```json
 {
+  "googleMapsApiKey": "AIza...",
+  "geminiApiKey": "AIza...",
   "zipCode": "94103",
   "cuisine": "japanese",
   "partySize": 4,
   "budget": "medium"
 }
 ```
+
+> API keys are supplied by the end user in the browser form and sent per request.
+> The backend response does not include these keys.
 
 ### Response (truncated)
 

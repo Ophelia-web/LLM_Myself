@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 
 
-class SearchRequest(BaseModel):
+class SearchQuery(BaseModel):
     zipCode: str = Field(..., min_length=5, max_length=10)
     cuisine: str = Field(..., min_length=2, max_length=50)
     partySize: int = Field(..., ge=1, le=20)
@@ -22,6 +22,19 @@ class SearchRequest(BaseModel):
         if normalized not in allowed:
             raise ValueError(f"budget must be one of {sorted(allowed)}")
         return normalized
+
+
+class SearchRequest(SearchQuery):
+    googleMapsApiKey: str = Field(..., min_length=20, max_length=200)
+    geminiApiKey: str = Field(..., min_length=20, max_length=200)
+
+    @field_validator("googleMapsApiKey", "geminiApiKey")
+    @classmethod
+    def validate_api_key(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("API key cannot be empty.")
+        return cleaned
 
 
 class GeocodeResult(BaseModel):
@@ -93,7 +106,7 @@ class RankedResult(BaseModel):
 
 
 class APIResponse(BaseModel):
-    query: SearchRequest
+    query: SearchQuery
     total_candidates: int
     top_results: list[RankedResult]
     notes: list[str] = []

@@ -1,5 +1,3 @@
-import os
-
 import httpx
 
 from app.models.schemas import GeocodeResult
@@ -8,15 +6,14 @@ from app.models.schemas import GeocodeResult
 GEOCODE_URL = "https://maps.googleapis.com/maps/api/geocode/json"
 
 
-async def geocode_zip(zip_code: str) -> GeocodeResult:
-    api_key = os.getenv("GOOGLE_MAPS_API_KEY")
-    if not api_key:
+async def geocode_zip(zip_code: str, maps_api_key: str) -> GeocodeResult:
+    if not maps_api_key.strip():
         raise ValueError("GOOGLE_MAPS_API_KEY is required.")
 
     params = {
         "address": zip_code,
         "components": f"postal_code:{zip_code}|country:US",
-        "key": api_key,
+        "key": maps_api_key,
     }
 
     async with httpx.AsyncClient(timeout=15.0) as client:

@@ -8,10 +8,45 @@
   </head>
   <body>
     <main class="container">
-      <h1>Restaurant Recommendation Demo</h1>
-      <p class="subtitle">Enter your preferences and get top 3 suggestions.</p>
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Personalized Dining Guide</p>
+          <h1>Restaurant Recommendation Demo</h1>
+          <p class="subtitle">
+            Use your own API keys and get top 3 recommendations tailored to your plan.
+          </p>
+        </div>
+        <div class="food-emoji" aria-hidden="true">🍜 🍣 🍔 🥗 🍰</div>
+      </header>
 
       <form id="search-form" class="search-form">
+        <fieldset class="api-section">
+          <legend>Your API Keys</legend>
+          <p class="hint">
+            Keys stay in your browser via localStorage and are sent only with this request.
+          </p>
+          <label>
+            Google Maps API Key
+            <input
+              type="password"
+              name="googleMapsApiKey"
+              placeholder="Paste your Google Maps API key"
+              autocomplete="off"
+              required
+            />
+          </label>
+          <label>
+            Gemini API Key
+            <input
+              type="password"
+              name="geminiApiKey"
+              placeholder="Paste your Gemini API key"
+              autocomplete="off"
+              required
+            />
+          </label>
+        </fieldset>
+
         <label>
           ZIP Code
           <input type="text" name="zipCode" placeholder="e.g. 94103" required />

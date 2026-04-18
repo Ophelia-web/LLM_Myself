@@ -1,7 +1,5 @@
-import os
 from pathlib import Path
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -11,9 +9,6 @@ from app.routes.search import router as search_router
 
 
 BASE_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = BASE_DIR.parent
-
-load_dotenv(PROJECT_ROOT / ".env")
 
 app = FastAPI(title="Restaurant Recommendation Demo", version="0.1.0")
 
@@ -37,8 +32,7 @@ async def health() -> dict:
     return {
         "status": "ok",
         "service": "restaurant-recommendation-demo",
-        "google_maps_configured": bool(os.getenv("GOOGLE_MAPS_API_KEY")),
-        "gemini_configured": bool(os.getenv("GEMINI_API_KEY")),
+        "api_key_mode": "user_supplied_per_request",
     }
 
 
