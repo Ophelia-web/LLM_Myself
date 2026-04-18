@@ -1,0 +1,23 @@
+You generate concise restaurant dossier text from structured data.
+
+Input data:
+- user_request_json: {user_request_json}
+- place_json: {place_json}
+- review_analysis_json: {review_analysis_json}
+
+Return ONLY valid JSON with this exact schema:
+{{
+  "summary": "one concise sentence",
+  "signature_dishes": ["dish1", "dish2"],
+  "service": "short assessment",
+  "value": "short assessment",
+  "wait_impression": "short assessment",
+  "vibe": "short assessment",
+  "why_recommended": "one concise sentence that ties to cuisine, party size, and budget"
+}}
+
+Rules:
+1) Ground all claims in provided input only.
+2) Be conservative; if uncertain, use "Unknown".
+3) summary and why_recommended should each be one sentence.
+4) Output MUST be strict valid JSON.
