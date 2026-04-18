@@ -1,6 +1,8 @@
 const form = document.getElementById("search-form");
 const statusEl = document.getElementById("status");
 const resultsEl = document.getElementById("results");
+const MAPS_KEY_STORAGE = "restaurant-demo.googleMapsApiKey";
+const GEMINI_KEY_STORAGE = "restaurant-demo.geminiApiKey";
 
 function escapeHtml(value) {
   return String(value)
@@ -41,16 +43,45 @@ function renderCard(item, index) {
   `;
 }
 
+function restoreStoredKeys() {
+  const mapsKeyInput = form.elements.googleMapsApiKey;
+  const geminiKeyInput = form.elements.geminiApiKey;
+
+  if (!(mapsKeyInput instanceof HTMLInputElement) || !(geminiKeyInput instanceof HTMLInputElement)) {
+    return;
+  }
+
+  mapsKeyInput.value = localStorage.getItem(MAPS_KEY_STORAGE) || "";
+  geminiKeyInput.value = localStorage.getItem(GEMINI_KEY_STORAGE) || "";
+}
+
+function persistKeys(payload) {
+  localStorage.setItem(MAPS_KEY_STORAGE, payload.googleMapsApiKey);
+  localStorage.setItem(GEMINI_KEY_STORAGE, payload.geminiApiKey);
+}
+
+restoreStoredKeys();
+
 form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const formData = new FormData(form);
   const payload = {
+    googleMapsApiKey: formData.get("googleMapsApiKey")?.toString().trim(),
+    geminiApiKey: formData.get("geminiApiKey")?.toString().trim(),
     zipCode: formData.get("zipCode")?.toString().trim(),
     cuisine: formData.get("cuisine")?.toString().trim(),
     partySize: Number(formData.get("partySize")),
     budget: formData.get("budget")?.toString().trim().toLowerCase(),
   };
+
+  if (!payload.googleMapsApiKey || !payload.geminiApiKey) {
+    statusEl.textContent = "Please provide both API keys.";
+    resultsEl.innerHTML = "";
+    return;
+  }
+
+  persistKeys(payload);
 
   statusEl.textContent = "Searching restaurants...";
   resultsEl.innerHTML = "";

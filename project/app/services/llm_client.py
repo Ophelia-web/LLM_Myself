@@ -1,5 +1,4 @@
 import json
-import os
 import re
 from typing import Any
 
@@ -14,11 +13,11 @@ GEMINI_URL_TEMPLATE = (
 
 async def generate_json_with_gemini(
     prompt: str,
+    api_key: str,
     model: str = "gemini-2.5-flash",
     temperature: float = 0.2,
 ) -> dict[str, Any]:
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
+    if not api_key.strip():
         raise ValueError("GEMINI_API_KEY is required.")
 
     url = GEMINI_URL_TEMPLATE.format(model=model, api_key=api_key)

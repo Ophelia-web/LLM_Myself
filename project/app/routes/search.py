@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 
-from app.models.schemas import APIResponse, SearchRequest
+from app.models.schemas import APIResponse, SearchQuery, SearchRequest
 from app.services.dossier_generator import build_dossier
 from app.services.geocode_zip import geocode_zip
 from app.services.places_retriever import retrieve_restaurant_candidates
@@ -15,18 +15,28 @@ router = APIRouter(tags=["search"])
 @router.post("/api/search", response_model=APIResponse)
 async def search_restaurants(payload: SearchRequest) -> APIResponse:
     try:
-        geocode_result = await geocode_zip(payload.zipCode)
+        maps_api_key = payload.googleMapsApiKey
+        gemini_api_key = payload.geminiApiKey
+        query = SearchQuery(
+            zipCode=payload.zipCode,
+            cuisine=payload.cuisine,
+            partySize=payload.partySize,
+            budget=payload.budget,
+        )
+
+        geocode_result = await geocode_zip(query.zipCode, maps_api_key=maps_api_key)
 
         candidates = await retrieve_restaurant_candidates(
             lat=geocode_result.lat,
             lng=geocode_result.lng,
-            cuisine=payload.cuisine,
+            cuisine=query.cuisine,
+            maps_api_key=maps_api_key,
             limit=10,
         )
 
         if not candidates:
             return APIResponse(
-                query=payload,
+                query=query,
                 total_candidates=0,
                 top_results=[],
                 notes=["No restaurants found for the requested location/cuisine."],
@@ -38,13 +48,15 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
             try:
                 review_analysis = await analyze_reviews(
                     restaurant_name=candidate.name,
-                    cuisine=payload.cuisine,
+                    cuisine=query.cuisine,
                     reviews=candidate.reviews,
+                    gemini_api_key=gemini_api_key,
                 )
                 dossier = await build_dossier(
                     place=candidate,
                     review_analysis=review_analysis,
-                    user_request=payload,
+                    user_request=query,
+                    gemini_api_key=gemini_api_key,
                 )
                 dossiers.append(dossier)
             except Exception:
@@ -60,14 +72,14 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
                 ),
             )
 
-        ranked = rank_dossiers(dossiers, payload)
+        ranked = rank_dossiers(dossiers, query)
         top_results = ranked[:3]
 
         for ranked_result in top_results:
             write_markdown_dossier(ranked_result)
 
         return APIResponse(
-            query=payload,
+            query=query,
             total_candidates=len(candidates),
             top_results=top_results,
             notes=[

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from app.models.schemas import DossierResult, PlaceResult, ReviewAnalysisResult, SearchRequest
+from app.models.schemas import DossierResult, PlaceResult, ReviewAnalysisResult, SearchQuery
 from app.services.llm_client import generate_json_with_gemini
 
 
@@ -15,7 +15,8 @@ def _load_prompt_template() -> str:
 async def build_dossier(
     place: PlaceResult,
     review_analysis: ReviewAnalysisResult,
-    user_request: SearchRequest,
+    user_request: SearchQuery,
+    gemini_api_key: str,
 ) -> DossierResult:
     prompt_template = _load_prompt_template()
     prompt = prompt_template.format(
@@ -24,7 +25,10 @@ async def build_dossier(
         review_analysis_json=json.dumps(review_analysis.model_dump(), ensure_ascii=True),
     )
 
-    llm_payload = await generate_json_with_gemini(prompt=prompt)
+    llm_payload = await generate_json_with_gemini(
+        prompt=prompt,
+        api_key=gemini_api_key,
+    )
 
     merged = {
         "restaurant_name": place.name,
