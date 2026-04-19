@@ -87,7 +87,7 @@ Health: `GET /health`
   "zipCode": "94103",
   "cuisine": "japanese",
   "partySize": 4,
-  "budget": "medium"
+  "budget": 2
 }
 ```
 
@@ -102,7 +102,7 @@ Health: `GET /health`
     "zipCode": "94103",
     "cuisine": "japanese",
     "partySize": 4,
-    "budget": "medium"
+    "budget": 2
   },
   "total_candidates": 10,
   "top_results": [
@@ -119,14 +119,14 @@ Health: `GET /health`
       "dossier": {
         "restaurant_name": "Example Restaurant",
         "rating": 4.5,
-        "price_level": 2,
         "address": "123 Example St",
-        "summary": "A reliable mid-priced Japanese spot with consistent feedback.",
         "signature_dishes": ["ramen", "karaage"],
         "service": "Friendly and attentive.",
         "value": "Good portions for the price.",
         "wait_impression": "Moderate waits during peak hours.",
         "vibe": "Casual and energetic.",
+        "reservable": true,
+        "reservation_link": "https://maps.google.com/?cid=...",
         "why_recommended": "Matches your cuisine and budget with strong ratings."
       }
     }

@@ -68,7 +68,7 @@ async def _place_details(
         "place_id": place_id,
         "fields": (
             "place_id,name,formatted_address,rating,user_ratings_total,price_level,"
-            "types,photos,reviews,geometry"
+            "types,photos,reviews,geometry,reservable,url,website"
         ),
         "reviews_sort": "newest",
         "key": api_key,
@@ -101,7 +101,7 @@ def _normalize_place(raw: dict[str, Any]) -> PlaceResult | None:
         )
 
     photos = []
-    for photo in raw.get("photos", [])[:5]:
+    for photo in raw.get("photos", [])[:3]:
         photos.append(
             {
                 "photo_reference": photo.get("photo_reference", ""),
@@ -109,6 +109,13 @@ def _normalize_place(raw: dict[str, Any]) -> PlaceResult | None:
                 "height": photo.get("height", 0),
             }
         )
+
+    reservable = raw.get("reservable")
+    reservation_link = raw.get("website") or raw.get("url")
+    if reservation_link == "":
+        reservation_link = None
+    if reservable is None and reservation_link:
+        reservable = True
 
     return PlaceResult(
         place_id=raw.get("place_id", ""),
@@ -120,5 +127,7 @@ def _normalize_place(raw: dict[str, Any]) -> PlaceResult | None:
         types=raw.get("types", []),
         photos=photos,
         reviews=reviews,
+        reservable=reservable if isinstance(reservable, bool) else None,
+        reservation_link=reservation_link if isinstance(reservation_link, str) else None,
         location=PlaceLocation(lat=lat, lng=lng),
     )

@@ -7,7 +7,6 @@ Input data:
 
 Return ONLY valid JSON with this exact schema:
 {{
-  "summary": "one concise sentence",
   "signature_dishes": ["dish1", "dish2"],
   "service": "short assessment",
   "value": "short assessment",
@@ -19,5 +18,5 @@ Return ONLY valid JSON with this exact schema:
 Rules:
 1) Ground all claims in provided input only.
 2) Be conservative; if uncertain, use "Unknown".
-3) summary and why_recommended should each be one sentence.
+3) why_recommended should be one sentence.
 4) Output MUST be strict valid JSON.
