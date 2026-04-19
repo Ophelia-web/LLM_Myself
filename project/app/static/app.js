@@ -5,9 +5,12 @@ const advancedSettingsEl = document.getElementById("advanced-settings");
 const MAPS_KEY_STORAGE = "restaurant-demo.googleMapsApiKey";
 const GEMINI_KEY_STORAGE = "restaurant-demo.geminiApiKey";
 let mapsApiKeyForPhoto = "";
-const PHOTO_FALLBACK =
-  "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=70";
-const RANK_LABELS = ["🥇 Best Overall", "🥈 Great Value", "🥉 Hidden Gem"];
+const ILLUSTRATED_FALLBACKS = [
+  "/static/art/sticker-bowl.svg",
+  "/static/art/sticker-toast.svg",
+  "/static/art/sticker-coffee.svg",
+];
+const RANK_LABELS = ["Best Overall", "Great Value", "Hidden Gem"];
 
 function escapeHtml(value) {
   return String(value)
@@ -19,15 +22,16 @@ function escapeHtml(value) {
 }
 
 function buildGooglePhotoUrl(photoReference, mapsApiKey, maxWidth = 720) {
-  if (!photoReference || !mapsApiKey) {
-    return PHOTO_FALLBACK;
-  }
   const params = new URLSearchParams({
     maxwidth: String(maxWidth),
     photoreference: photoReference,
     key: mapsApiKey,
   });
   return `https://maps.googleapis.com/maps/api/place/photo?${params.toString()}`;
+}
+
+function pickFallbackImage(index) {
+  return ILLUSTRATED_FALLBACKS[index % ILLUSTRATED_FALLBACKS.length];
 }
 
 function compactText(value) {
@@ -88,7 +92,12 @@ function safeLine(label, value, icon = "") {
   if (!text) {
     return "";
   }
-  return `<p>${icon ? `<span class="line-icon">${icon}</span> ` : ""}<strong>${label}:</strong> ${escapeHtml(text)}</p>`;
+  return `
+    <p class="detail-line">
+      ${icon ? `<img class="line-icon" src="${icon}" alt="" aria-hidden="true" />` : ""}
+      <strong>${label}:</strong> ${escapeHtml(text)}
+    </p>
+  `;
 }
 
 function renderCard(item, index, selectedBudget) {
@@ -105,12 +114,15 @@ function renderCard(item, index, selectedBudget) {
               )}"
               alt="${escapeHtml(dossier.restaurant_name || "Restaurant")} photo ${photoIndex + 1}"
               loading="lazy"
-              onerror="this.onerror=null;this.src='${PHOTO_FALLBACK}'"
+              onerror="this.onerror=null;this.src='${pickFallbackImage(photoIndex)}'"
             />
           `
         )
         .join("")
-    : `<img src="${PHOTO_FALLBACK}" alt="Food placeholder image" loading="lazy" />`;
+    : ILLUSTRATED_FALLBACKS.map(
+        (imgSrc, imgIndex) =>
+          `<img src="${imgSrc}" alt="Illustrated food art ${imgIndex + 1}" loading="lazy" />`
+      ).join("");
   const shortReason = oneSentence(
     dossier.why_recommended,
     "A reliable choice with strong ratings and a well-rounded dining experience."
@@ -133,16 +145,22 @@ function renderCard(item, index, selectedBudget) {
             <h3>${escapeHtml(title)}</h3>
           </div>
           <div class="badge-row">
-            <span class="badge">⭐ ${escapeHtml(dossier.rating ?? "N/A")}</span>
+            <span class="badge"><img src="/static/art/icon-star.svg" alt="" aria-hidden="true" /> ${escapeHtml(
+              dossier.rating ?? "N/A"
+            )}</span>
             <span class="badge">Match score: ${score} / 100</span>
           </div>
         </div>
-        ${address ? `<p class="meta-line"><span class="line-icon">📍</span> ${escapeHtml(address)}</p>` : ""}
-        <p class="meta-line"><span class="line-icon">💰</span> <strong>Price range:</strong> ${formatBudgetLabel(selectedBudget)}</p>
+        ${
+          address
+            ? `<p class="meta-line"><img class="line-icon" src="/static/art/icon-map.svg" alt="" aria-hidden="true" /> ${escapeHtml(address)}</p>`
+            : ""
+        }
+        <p class="meta-line"><img class="line-icon" src="/static/art/icon-budget.svg" alt="" aria-hidden="true" /> <strong>Price range:</strong> ${formatBudgetLabel(selectedBudget)}</p>
         <p class="why"><strong>Why you'll like it:</strong> ${escapeHtml(shortReason)}</p>
-        ${safeLine("Must-try dishes", dishes, "🍣")}
-        ${safeLine("Atmosphere", vibe, "🏡")}
-        ${safeLine("Wait time", wait, "⏱")}
+        ${safeLine("Must-try dishes", dishes, "/static/art/icon-food.svg")}
+        ${safeLine("Atmosphere", vibe, "/static/art/icon-map.svg")}
+        ${safeLine("Wait time", wait, "/static/art/icon-star.svg")}
         <p><strong>${resolveReservationText(dossier)}</strong></p>
         <a class="maps-link" href="${escapeHtml(
           mapsUrl
@@ -208,7 +226,7 @@ form.addEventListener("submit", async (event) => {
   persistKeys(payload);
   mapsApiKeyForPhoto = payload.googleMapsApiKey;
 
-  statusEl.textContent = "🔍 Finding the best spots for you...";
+  statusEl.textContent = "Finding the best spots for you...";
   resultsEl.innerHTML = `
     <article class="card skeleton-card" aria-hidden="true"></article>
     <article class="card skeleton-card" aria-hidden="true"></article>
@@ -235,7 +253,7 @@ form.addEventListener("submit", async (event) => {
     if (!top.length) {
       resultsEl.innerHTML = `
         <p class="empty">
-          😕 No great matches found.<br />
+          No great matches found.<br />
           Try changing your filters.
         </p>
       `;
