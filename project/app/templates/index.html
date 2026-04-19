@@ -6,10 +6,7 @@
     <title>Personalized Dining Guide</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
@@ -20,12 +17,15 @@
           <h1>Personalized Dining Guide</h1>
           <p class="subtitle">Find something warm, cozy, and just right for you.</p>
           <div class="hero-stickers" aria-hidden="true">
-            <img src="/static/art/sticker-toast.svg" alt="" />
-            <img src="/static/art/sticker-coffee.svg" alt="" />
-            <img src="/static/art/sticker-bowl.svg" alt="" />
+            <img src="https://images.unsplash.com/vector-1767592996701-4408079ed440?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="" />
+            <img src="https://images.unsplash.com/vector-1754199100419-181232bd1bb9?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="" />
           </div>
         </div>
-        <img class="hero-accent" src="/static/art/sticker-bowl.svg" alt="" aria-hidden="true" />
+        <img
+          class="hero-accent"
+          src="https://images.unsplash.com/vector-1767592996701-4408079ed440?fm=jpg&q=70&w=900&auto=format&fit=crop"
+          alt="Watercolor food illustration"
+        />
       </section>
 
       <section class="form-section card">
@@ -57,34 +57,22 @@
 
           <div class="input-grid">
             <label>
-              <span class="label-title">
-                <img src="/static/art/icon-map.svg" alt="" aria-hidden="true" />
-                Where are you?
-              </span>
+              <span class="label-title">Where are you?</span>
               <input type="text" name="zipCode" placeholder="e.g. 10025" required />
             </label>
 
             <label>
-              <span class="label-title">
-                <img src="/static/art/icon-food.svg" alt="" aria-hidden="true" />
-                What are you craving?
-              </span>
+              <span class="label-title">What are you craving?</span>
               <input type="text" name="cuisine" placeholder="e.g. Sushi" required />
             </label>
 
             <label>
-              <span class="label-title">
-                <img src="/static/art/icon-people.svg" alt="" aria-hidden="true" />
-                Number of people
-              </span>
+              <span class="label-title">Number of people</span>
               <input type="number" name="partySize" min="1" max="20" value="2" required />
             </label>
 
             <label>
-              <span class="label-title">
-                <img src="/static/art/icon-budget.svg" alt="" aria-hidden="true" />
-                Budget range
-              </span>
+              <span class="label-title">Budget range</span>
               <select name="budget" required>
                 <option value="1">1 — Inexpensive</option>
                 <option value="2" selected>2 — Moderate</option>
@@ -94,7 +82,7 @@
             </label>
           </div>
 
-          <button type="submit">Find Restaurants</button>
+          <button type="submit" class="submit-btn">Find Restaurants</button>
         </form>
       </section>
 
