@@ -111,7 +111,7 @@ def _normalize_place(raw: dict[str, Any]) -> PlaceResult | None:
         )
 
     reservable = raw.get("reservable")
-    reservation_link = raw.get("website") or raw.get("url")
+    reservation_link = raw.get("url")
     if reservation_link == "":
         reservation_link = None
     if reservable is None and reservation_link:

@@ -58,6 +58,7 @@ class PlaceResult(BaseModel):
     reviews: list[dict] = []
     reservable: bool | None = None
     reservation_link: str | None = None
+    maps_link: str | None = None
     location: PlaceLocation
 
 
@@ -89,6 +90,7 @@ class DossierResult(BaseModel):
     reviews: list[dict] = []
     reservable: bool | None = None
     reservation_link: str | None = None
+    maps_link: str | None = None
 
 
 class ScoreBreakdown(BaseModel):
