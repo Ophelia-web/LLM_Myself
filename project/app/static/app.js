@@ -6,9 +6,9 @@ const MAPS_KEY_STORAGE = "restaurant-demo.googleMapsApiKey";
 const GEMINI_KEY_STORAGE = "restaurant-demo.geminiApiKey";
 let mapsApiKeyForPhoto = "";
 const ILLUSTRATED_FALLBACKS = [
-  "/static/art/sticker-bowl.svg",
-  "/static/art/sticker-toast.svg",
-  "/static/art/sticker-coffee.svg",
+  "https://images.unsplash.com/vector-1767592996701-4408079ed440?fm=jpg&q=70&w=480&auto=format&fit=crop",
+  "https://images.unsplash.com/vector-1754199100419-181232bd1bb9?fm=jpg&q=70&w=480&auto=format&fit=crop",
+  "https://images.unsplash.com/vector-1760911515343-43558fe0c989?fm=jpg&q=70&w=480&auto=format&fit=crop",
 ];
 const RANK_LABELS = ["Best Overall", "Great Value", "Hidden Gem"];
 
@@ -87,17 +87,12 @@ function resolveReservationText(dossier) {
   return "Reservation: Not available";
 }
 
-function safeLine(label, value, icon = "") {
+function safeLine(label, value) {
   const text = compactText(value);
   if (!text) {
     return "";
   }
-  return `
-    <p class="detail-line">
-      ${icon ? `<img class="line-icon" src="${icon}" alt="" aria-hidden="true" />` : ""}
-      <strong>${label}:</strong> ${escapeHtml(text)}
-    </p>
-  `;
+  return `<p class="detail-line"><strong>${label}:</strong> ${escapeHtml(text)}</p>`;
 }
 
 function renderCard(item, index, selectedBudget) {
@@ -145,22 +140,20 @@ function renderCard(item, index, selectedBudget) {
             <h3>${escapeHtml(title)}</h3>
           </div>
           <div class="badge-row">
-            <span class="badge"><img src="/static/art/icon-star.svg" alt="" aria-hidden="true" /> ${escapeHtml(
-              dossier.rating ?? "N/A"
-            )}</span>
+            <span class="badge">${escapeHtml(dossier.rating ?? "N/A")}</span>
             <span class="badge">Match score: ${score} / 100</span>
           </div>
         </div>
         ${
           address
-            ? `<p class="meta-line"><img class="line-icon" src="/static/art/icon-map.svg" alt="" aria-hidden="true" /> ${escapeHtml(address)}</p>`
+            ? `<p class="meta-line">${escapeHtml(address)}</p>`
             : ""
         }
-        <p class="meta-line"><img class="line-icon" src="/static/art/icon-budget.svg" alt="" aria-hidden="true" /> <strong>Price range:</strong> ${formatBudgetLabel(selectedBudget)}</p>
+        <p class="meta-line"><strong>Price range:</strong> ${formatBudgetLabel(selectedBudget)}</p>
         <p class="why"><strong>Why you'll like it:</strong> ${escapeHtml(shortReason)}</p>
-        ${safeLine("Must-try dishes", dishes, "/static/art/icon-food.svg")}
-        ${safeLine("Atmosphere", vibe, "/static/art/icon-map.svg")}
-        ${safeLine("Wait time", wait, "/static/art/icon-star.svg")}
+        ${safeLine("Must-try dishes", dishes)}
+        ${safeLine("Atmosphere", vibe)}
+        ${safeLine("Wait time", wait)}
         <p><strong>${resolveReservationText(dossier)}</strong></p>
         <a class="maps-link" href="${escapeHtml(
           mapsUrl
