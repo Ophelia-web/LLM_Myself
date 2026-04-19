@@ -138,8 +138,8 @@ function renderCard(item, index, selectedBudget) {
           </div>
         </div>
         ${address ? `<p class="meta-line"><span class="line-icon">📍</span> ${escapeHtml(address)}</p>` : ""}
-        <p class="meta-line"><span class="line-icon">💰</span> ${formatBudgetLabel(selectedBudget)}</p>
-        <p class="why">✨ ${escapeHtml(shortReason)}</p>
+        <p class="meta-line"><span class="line-icon">💰</span> <strong>Price range:</strong> ${formatBudgetLabel(selectedBudget)}</p>
+        <p class="why"><strong>Why you'll like it:</strong> ${escapeHtml(shortReason)}</p>
         ${safeLine("Must-try dishes", dishes, "🍣")}
         ${safeLine("Atmosphere", vibe, "🏡")}
         ${safeLine("Wait time", wait, "⏱")}
