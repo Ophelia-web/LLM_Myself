@@ -3,80 +3,82 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Restaurant Recommendation Demo</title>
+    <title>Personalized Dining Guide</title>
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
     <main class="container">
-      <header class="hero">
-        <div>
+      <section class="hero card">
+        <div class="hero-content">
           <p class="eyebrow">Personalized Dining Guide</p>
-          <h1>Restaurant Recommendation Demo</h1>
-          <p class="subtitle">
-            Use your own API keys and get top 3 recommendations tailored to your plan.
-          </p>
+          <h1>Find the best restaurants for your plan</h1>
+          <p class="subtitle">Get clear, curated picks in seconds.</p>
         </div>
         <div class="food-emoji" aria-hidden="true">🥞 🥐 🧇 ☕ 🍰</div>
-      </header>
+      </section>
 
-      <form id="search-form" class="search-form">
-        <fieldset class="api-section">
-          <legend>Your API Keys</legend>
-          <p class="hint">
-            Keys stay in your browser via localStorage and are sent only with this request.
-          </p>
-          <label>
-            Google Maps API Key
-            <input
-              type="password"
-              name="googleMapsApiKey"
-              placeholder="Paste your Google Maps API key"
-              autocomplete="off"
-              required
-            />
-          </label>
-          <label>
-            Gemini API Key
-            <input
-              type="password"
-              name="geminiApiKey"
-              placeholder="Paste your Gemini API key"
-              autocomplete="off"
-              required
-            />
-          </label>
-        </fieldset>
+      <section class="form-section card">
+        <form id="search-form" class="search-form">
+          <details id="advanced-settings" class="advanced-settings">
+            <summary>Advanced Settings</summary>
+            <p class="hint">Keys are stored locally in your browser.</p>
+            <div class="advanced-grid">
+              <label class="advanced-label">
+                Google Maps API Key
+                <input
+                  type="password"
+                  name="googleMapsApiKey"
+                  placeholder="Paste your Google Maps API key"
+                  autocomplete="off"
+                />
+              </label>
+              <label class="advanced-label">
+                Gemini API Key
+                <input
+                  type="password"
+                  name="geminiApiKey"
+                  placeholder="Paste your Gemini API key"
+                  autocomplete="off"
+                />
+              </label>
+            </div>
+          </details>
 
-        <label>
-          ZIP Code
-          <input type="text" name="zipCode" placeholder="e.g. 94103" required />
-        </label>
+          <div class="input-grid">
+            <label>
+              <span class="label-title">📍 Where are you?</span>
+              <input type="text" name="zipCode" placeholder="e.g. 10025" required />
+            </label>
 
-        <label>
-          Cuisine
-          <input type="text" name="cuisine" placeholder="e.g. Japanese" required />
-        </label>
+            <label>
+              <span class="label-title">🍣 What are you craving?</span>
+              <input type="text" name="cuisine" placeholder="e.g. Sushi" required />
+            </label>
 
-        <label>
-          Party Size
-          <input type="number" name="partySize" min="1" max="20" value="2" required />
-        </label>
+            <label>
+              <span class="label-title">👥 Number of people</span>
+              <input type="number" name="partySize" min="1" max="20" value="2" required />
+            </label>
 
-        <label>
-          Budget
-          <select name="budget" required>
-            <option value="1">1 — Inexpensive</option>
-            <option value="2" selected>2 — Moderate</option>
-            <option value="3">3 — Expensive</option>
-            <option value="4">4 — Very Expensive</option>
-          </select>
-        </label>
+            <label>
+              <span class="label-title">💰 Budget range</span>
+              <select name="budget" required>
+                <option value="1">1 — Inexpensive</option>
+                <option value="2" selected>2 — Moderate</option>
+                <option value="3">3 — Expensive</option>
+                <option value="4">4 — Very Expensive</option>
+              </select>
+            </label>
+          </div>
 
-        <button type="submit">Find Restaurants</button>
-      </form>
+          <button type="submit">Find Restaurants</button>
+        </form>
+      </section>
 
-      <section id="status" class="status"></section>
-      <section id="results" class="results"></section>
+      <section class="results-section">
+        <div id="status" class="status" aria-live="polite"></div>
+        <div id="results" class="results"></div>
+      </section>
     </main>
 
     <script src="/static/app.js"></script>

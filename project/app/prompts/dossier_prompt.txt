@@ -12,11 +12,12 @@ Return ONLY valid JSON with this exact schema:
   "value": "short assessment",
   "wait_impression": "short assessment",
   "vibe": "short assessment",
-  "why_recommended": "one concise sentence that ties to cuisine, party size, and budget"
+  "why_recommended": "one concise human-sounding sentence"
 }}
 
 Rules:
 1) Ground all claims in provided input only.
 2) Be conservative; if uncertain, use "Unknown".
-3) why_recommended should be one sentence.
-4) Output MUST be strict valid JSON.
+3) why_recommended must be one sentence, with max 16 words.
+4) Do not repeat user input terms verbatim unless necessary.
+5) Output MUST be strict valid JSON.

@@ -1,11 +1,13 @@
 const form = document.getElementById("search-form");
 const statusEl = document.getElementById("status");
 const resultsEl = document.getElementById("results");
+const advancedSettingsEl = document.getElementById("advanced-settings");
 const MAPS_KEY_STORAGE = "restaurant-demo.googleMapsApiKey";
 const GEMINI_KEY_STORAGE = "restaurant-demo.geminiApiKey";
 let mapsApiKeyForPhoto = "";
 const PHOTO_FALLBACK =
   "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=70";
+const RANK_LABELS = ["🥇 Best Overall", "🥈 Great Value", "🥉 Hidden Gem"];
 
 function escapeHtml(value) {
   return String(value)
@@ -28,27 +30,71 @@ function buildGooglePhotoUrl(photoReference, mapsApiKey, maxWidth = 720) {
   return `https://maps.googleapis.com/maps/api/place/photo?${params.toString()}`;
 }
 
-function reservationBadge(dossier) {
-  if (dossier.reservable === true && dossier.reservation_link) {
-    return `<a class="badge badge-link" href="${escapeHtml(
-      dossier.reservation_link
-    )}" target="_blank" rel="noopener noreferrer">Reservable</a>`;
+function compactText(value) {
+  if (!value) {
+    return "";
   }
-  if (dossier.reservable === false) {
-    return `<span class="badge">Not reservable</span>`;
+  const cleaned = String(value).replace(/\s+/g, " ").trim();
+  if (!cleaned || /^(unknown|n\/a|not available)$/i.test(cleaned)) {
+    return "";
   }
-  if (dossier.reservation_link) {
-    return `<a class="badge badge-link" href="${escapeHtml(
-      dossier.reservation_link
-    )}" target="_blank" rel="noopener noreferrer">Reservation info</a>`;
-  }
-  return `<span class="badge">Reservation unknown</span>`;
+  return cleaned;
 }
 
-function renderCard(item, index) {
-  const d = item.dossier;
-  const score = item.score.total;
-  const photos = (d.photos || []).slice(0, 3);
+function oneSentence(text, fallback) {
+  const compact = compactText(text);
+  if (!compact) {
+    return fallback;
+  }
+  const [first] = compact.split(/(?<=[.!?])\s+/);
+  return first || fallback;
+}
+
+function formatBudgetLabel(level) {
+  const labels = {
+    1: "Inexpensive",
+    2: "Moderate",
+    3: "Expensive",
+    4: "Very Expensive",
+  };
+  return labels[level] || "Not available";
+}
+
+function mapLink(dossier) {
+  return dossier.reservation_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dossier.restaurant_name || "")}`;
+}
+
+function resolveReservationText(dossier) {
+  if (dossier.reservable === true) {
+    return dossier.reservation_link
+      ? `Reservation: Available (<a href="${escapeHtml(
+          dossier.reservation_link
+        )}" target="_blank" rel="noopener noreferrer">Book now</a>)`
+      : "Reservation: Available";
+  }
+  if (dossier.reservable === false) {
+    return "Reservation: Not available";
+  }
+  if (dossier.reservation_link) {
+    return `Reservation: <a href="${escapeHtml(
+      dossier.reservation_link
+    )}" target="_blank" rel="noopener noreferrer">Check details</a>`;
+  }
+  return "Reservation: Not available";
+}
+
+function safeLine(label, value, icon = "") {
+  const text = compactText(value);
+  if (!text) {
+    return "";
+  }
+  return `<p>${icon ? `<span class="line-icon">${icon}</span> ` : ""}<strong>${label}:</strong> ${escapeHtml(text)}</p>`;
+}
+
+function renderCard(item, index, selectedBudget) {
+  const dossier = item.dossier || {};
+  const score = Math.round(Number(item?.score?.total || 0));
+  const photos = (dossier.photos || []).slice(0, 3);
   const photoGallery = photos.length
     ? photos
         .map(
@@ -57,7 +103,7 @@ function renderCard(item, index) {
               src="${escapeHtml(
                 buildGooglePhotoUrl(photo.photo_reference, mapsApiKeyForPhoto, photoIndex === 0 ? 900 : 560)
               )}"
-              alt="${escapeHtml(d.restaurant_name)} photo ${photoIndex + 1}"
+              alt="${escapeHtml(dossier.restaurant_name || "Restaurant")} photo ${photoIndex + 1}"
               loading="lazy"
               onerror="this.onerror=null;this.src='${PHOTO_FALLBACK}'"
             />
@@ -65,38 +111,53 @@ function renderCard(item, index) {
         )
         .join("")
     : `<img src="${PHOTO_FALLBACK}" alt="Food placeholder image" loading="lazy" />`;
-  const dishes = escapeHtml((d.signature_dishes || []).join(", ") || "N/A");
-  const reservableRow =
-    d.reservable === true && d.reservation_link
-      ? `<p><strong>Reservation:</strong> Available (<a href="${escapeHtml(
-          d.reservation_link
-        )}" target="_blank" rel="noopener noreferrer">Book now</a>)</p>`
-      : d.reservable === false
-        ? `<p><strong>Reservation:</strong> Not available</p>`
-        : d.reservation_link
-          ? `<p><strong>Reservation:</strong> <a href="${escapeHtml(
-              d.reservation_link
-            )}" target="_blank" rel="noopener noreferrer">Check details</a></p>`
-          : `<p><strong>Reservation:</strong> Unknown</p>`;
+  const shortReason = oneSentence(
+    dossier.why_recommended,
+    "A reliable choice with strong ratings and a well-rounded dining experience."
+  );
+  const dishes = compactText((dossier.signature_dishes || []).join(", "));
+  const vibe = compactText(dossier.vibe);
+  const wait = compactText(dossier.wait_impression);
+  const address = compactText(dossier.address);
+  const title = compactText(dossier.restaurant_name) || "Restaurant pick";
+  const label = RANK_LABELS[index] || `#${index + 1} Top Pick`;
+  const mapsUrl = mapLink(dossier);
 
   return `
     <article class="card result-card">
       <div class="photo-strip">${photoGallery}</div>
       <div class="card-body">
         <div class="card-top">
-          <h3>#${index + 1} ${escapeHtml(d.restaurant_name)}</h3>
+          <div>
+            <p class="rank-label">${label}</p>
+            <h3>${escapeHtml(title)}</h3>
+          </div>
           <div class="badge-row">
-            <span class="badge">Score ${score}</span>
-            ${reservationBadge(d)}
+            <span class="badge">⭐ ${escapeHtml(dossier.rating ?? "N/A")}</span>
+            <span class="badge">Match score: ${score} / 100</span>
           </div>
         </div>
-        <p class="meta-line"><strong>Rating:</strong> ${d.rating} (${d.user_rating_count} reviews)</p>
-        <p><strong>Address:</strong> ${escapeHtml(d.address)}</p>
-        ${reservableRow}
-        <p><strong>Signature dishes:</strong> ${dishes}</p>
-        <p><strong>Vibe:</strong> ${escapeHtml(d.vibe || "Unknown")}</p>
-        <p><strong>Wait impression:</strong> ${escapeHtml(d.wait_impression || "Unknown")}</p>
-        <p class="why"><strong>Why recommended:</strong> ${escapeHtml(d.why_recommended || "Good fit for your request.")}</p>
+        ${address ? `<p class="meta-line"><span class="line-icon">📍</span> ${escapeHtml(address)}</p>` : ""}
+        <p class="meta-line"><span class="line-icon">💰</span> <strong>Price range:</strong> ${formatBudgetLabel(selectedBudget)}</p>
+        <p class="why"><strong>Why you'll like it:</strong> ${escapeHtml(shortReason)}</p>
+        ${safeLine("Must-try dishes", dishes, "🍣")}
+        ${safeLine("Atmosphere", vibe, "🏡")}
+        ${safeLine("Wait time", wait, "⏱")}
+        <p><strong>${resolveReservationText(dossier)}</strong></p>
+        <a class="maps-link" href="${escapeHtml(
+          mapsUrl
+        )}" target="_blank" rel="noopener noreferrer">View on Maps</a>
+        <details class="why-match">
+          <summary>Why this match</summary>
+          <ul>
+            <li>Cuisine match: ${escapeHtml(item?.score?.cuisine_match ?? "N/A")}</li>
+            <li>Budget match: ${escapeHtml(item?.score?.budget_match ?? "N/A")}</li>
+            <li>Rating: ${escapeHtml(item?.score?.rating ?? "N/A")}</li>
+            <li>Review value match: ${escapeHtml(item?.score?.review_value_match ?? "N/A")}</li>
+            <li>Atmosphere fit: ${escapeHtml(item?.score?.vibe_fit ?? "N/A")}</li>
+            <li>Wait penalty: ${escapeHtml(item?.score?.wait_penalty ?? "N/A")}</li>
+          </ul>
+        </details>
       </div>
     </article>
   `;
@@ -112,6 +173,9 @@ function restoreStoredKeys() {
 
   mapsKeyInput.value = localStorage.getItem(MAPS_KEY_STORAGE) || "";
   geminiKeyInput.value = localStorage.getItem(GEMINI_KEY_STORAGE) || "";
+  if (mapsKeyInput.value || geminiKeyInput.value) {
+    advancedSettingsEl?.setAttribute("open", "open");
+  }
 }
 
 function persistKeys(payload) {
@@ -135,6 +199,7 @@ form.addEventListener("submit", async (event) => {
   };
 
   if (!payload.googleMapsApiKey || !payload.geminiApiKey) {
+    advancedSettingsEl?.setAttribute("open", "open");
     statusEl.textContent = "Please provide both API keys.";
     resultsEl.innerHTML = "";
     return;
@@ -143,8 +208,12 @@ form.addEventListener("submit", async (event) => {
   persistKeys(payload);
   mapsApiKeyForPhoto = payload.googleMapsApiKey;
 
-  statusEl.textContent = "Searching restaurants...";
-  resultsEl.innerHTML = "";
+  statusEl.textContent = "🔍 Finding the best spots for you...";
+  resultsEl.innerHTML = `
+    <article class="card skeleton-card" aria-hidden="true"></article>
+    <article class="card skeleton-card" aria-hidden="true"></article>
+    <article class="card skeleton-card" aria-hidden="true"></article>
+  `;
 
   try {
     const response = await fetch("/api/search", {
@@ -164,11 +233,16 @@ form.addEventListener("submit", async (event) => {
     statusEl.textContent = `Found ${top.length} top recommendations`;
 
     if (!top.length) {
-      resultsEl.innerHTML = `<p class="empty">No recommendations found. Try another ZIP/cuisine.</p>`;
+      resultsEl.innerHTML = `
+        <p class="empty">
+          😕 No great matches found.<br />
+          Try changing your filters.
+        </p>
+      `;
       return;
     }
 
-    resultsEl.innerHTML = top.map((item, i) => renderCard(item, i)).join("");
+    resultsEl.innerHTML = top.map((item, i) => renderCard(item, i, payload.budget)).join("");
   } catch (error) {
     statusEl.textContent = "Search failed.";
     resultsEl.innerHTML = `<p class="error">${escapeHtml(error.message || "Unknown error")}</p>`;
