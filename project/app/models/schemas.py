@@ -5,7 +5,7 @@ class SearchQuery(BaseModel):
     zipCode: str = Field(..., min_length=5, max_length=10)
     cuisine: str = Field(..., min_length=2, max_length=50)
     partySize: int = Field(..., ge=1, le=20)
-    budget: str = Field(..., description="low|medium|high|luxury")
+    budget: int = Field(..., ge=1, le=4, description="1|2|3|4")
 
     @field_validator("zipCode")
     @classmethod
@@ -16,12 +16,10 @@ class SearchQuery(BaseModel):
 
     @field_validator("budget")
     @classmethod
-    def validate_budget(cls, value: str) -> str:
-        allowed = {"low", "medium", "high", "luxury"}
-        normalized = value.lower().strip()
-        if normalized not in allowed:
-            raise ValueError(f"budget must be one of {sorted(allowed)}")
-        return normalized
+    def validate_budget(cls, value: int) -> int:
+        if value not in {1, 2, 3, 4}:
+            raise ValueError("budget must be one of [1, 2, 3, 4]")
+        return value
 
 
 class SearchRequest(SearchQuery):
@@ -58,6 +56,8 @@ class PlaceResult(BaseModel):
     types: list[str] = []
     photos: list[dict] = []
     reviews: list[dict] = []
+    reservable: bool | None = None
+    reservation_link: str | None = None
     location: PlaceLocation
 
 
@@ -74,9 +74,8 @@ class ReviewAnalysisResult(BaseModel):
 class DossierResult(BaseModel):
     restaurant_name: str
     rating: float
-    price_level: int
+    price_level: int = Field(0, exclude=True)
     address: str
-    summary: str
     signature_dishes: list[str]
     service: str
     value: str
@@ -88,6 +87,8 @@ class DossierResult(BaseModel):
     location: PlaceLocation
     photos: list[dict] = []
     reviews: list[dict] = []
+    reservable: bool | None = None
+    reservation_link: str | None = None
 
 
 class ScoreBreakdown(BaseModel):

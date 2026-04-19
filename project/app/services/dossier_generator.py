@@ -35,10 +35,6 @@ async def build_dossier(
         "rating": place.rating,
         "price_level": place.price_level,
         "address": place.formatted_address,
-        "summary": llm_payload.get(
-            "summary",
-            f"{place.name} is a well-rated option for {user_request.cuisine} in {user_request.zipCode}.",
-        ),
         "signature_dishes": llm_payload.get(
             "signature_dishes", review_analysis.signature_dishes
         ),
@@ -57,6 +53,8 @@ async def build_dossier(
         "location": place.location,
         "photos": place.photos,
         "reviews": place.reviews,
+        "reservable": place.reservable,
+        "reservation_link": place.reservation_link,
     }
 
     return DossierResult.model_validate(merged)
