@@ -1,11 +1,14 @@
 import base64
 import json
+import logging
 import mimetypes
 import os
 import re
 from typing import Any
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 GEMINI_URL_TEMPLATE = (
@@ -48,41 +51,11 @@ async def generate_json_with_gemini_multimodal(
     temperature: float = 0.2,
 ) -> dict[str, Any]:
     cleaned_urls = [url.strip() for url in image_urls if url and url.strip()]
+    logger.info("VLM multimodal request received with %s image URLs.", len(cleaned_urls))
     if not cleaned_urls:
-        return await generate_json_with_gemini(
-            prompt=prompt,
-            model=model,
-            temperature=temperature,
-        )
+        raise ValueError("No photo URLs available for multimodal analysis.")
 
     url = _build_gemini_url(model)
-    direct_payload = {
-        "contents": [
-            {
-                "parts": [{"text": prompt}]
-                + [
-                    {
-                        "file_data": {
-                            "file_uri": image_url,
-                            "mime_type": "image/jpeg",
-                        }
-                    }
-                    for image_url in cleaned_urls
-                ]
-            }
-        ],
-        "generationConfig": {
-            "temperature": temperature,
-            "responseMimeType": "application/json",
-        },
-    }
-
-    try:
-        direct_data = await _call_gemini(url, direct_payload)
-        return _safe_json_parse(_extract_response_text(direct_data))
-    except Exception:
-        pass
-
     inline_data_payload = await _build_inline_image_payload(
         prompt=prompt,
         image_urls=cleaned_urls,
@@ -98,10 +71,17 @@ async def _build_inline_image_payload(
     temperature: float,
 ) -> dict[str, Any]:
     parts: list[dict[str, Any]] = [{"text": prompt}]
+    inline_images = 0
     async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
         for image_url in image_urls:
             try:
                 response = await client.get(image_url)
+                logger.info(
+                    "Fetched image URL status=%s content-type=%s url=%s",
+                    response.status_code,
+                    response.headers.get("content-type", ""),
+                    image_url,
+                )
                 response.raise_for_status()
                 content_type = response.headers.get("content-type", "")
                 mime_type = _resolve_mime_type(image_url, content_type)
@@ -114,18 +94,17 @@ async def _build_inline_image_payload(
                         }
                     }
                 )
-            except Exception:
+                inline_images += 1
+            except Exception as exc:
+                logger.exception(
+                    "Failed to fetch/encode image for multimodal analysis url=%s reason=%s",
+                    image_url,
+                    exc,
+                )
                 continue
 
-    if len(parts) == 1:
-        parts.append(
-            {
-                "text": (
-                    "No image bytes were retrievable from provided URLs. "
-                    "Return conservative 'unknown' values."
-                )
-            }
-        )
+    if inline_images == 0:
+        raise ValueError("No image bytes were retrievable from the provided photo URLs.")
 
     return {
         "contents": [{"parts": parts}],
@@ -148,9 +127,20 @@ def _resolve_mime_type(image_url: str, content_type_header: str) -> str:
 
 async def _call_gemini(url: str, payload: dict[str, Any]) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=45.0) as client:
-        response = await client.post(url, json=payload)
-        response.raise_for_status()
-        return response.json()
+        try:
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as exc:
+            logger.exception(
+                "Gemini API HTTP error status=%s body=%s",
+                exc.response.status_code,
+                exc.response.text,
+            )
+            raise
+        except Exception as exc:
+            logger.exception("Gemini API request failed: %s", exc)
+            raise
 
 
 def _extract_response_text(response_json: dict[str, Any]) -> str:
@@ -179,9 +169,11 @@ def _safe_json_parse(raw_text: str) -> dict[str, Any]:
     try:
         parsed = json.loads(trimmed)
     except json.JSONDecodeError as exc:
+        logger.exception("Failed to parse Gemini JSON response: %s", trimmed[:4000])
         raise ValueError(f"Model response was not valid JSON: {trimmed}") from exc
 
     if not isinstance(parsed, dict):
+        logger.error("Gemini response was not a JSON object: %s", type(parsed).__name__)
         raise ValueError("Expected a JSON object from model response.")
 
     return parsed
