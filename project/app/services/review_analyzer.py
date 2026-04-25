@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from app.models.schemas import ReviewAnalysisResult
+from app.models.schemas import ReviewAnalysisResult, ReviewEvidence
 from app.services.llm_client import generate_json_with_gemini
 
 
@@ -15,26 +15,49 @@ def _load_prompt_template() -> str:
 async def analyze_reviews(
     restaurant_name: str,
     cuisine: str,
-    reviews: list[dict],
-    gemini_api_key: str,
+    evidence: list[ReviewEvidence],
 ) -> ReviewAnalysisResult:
-    if not reviews:
+    if not evidence:
         return ReviewAnalysisResult(
             signature_dishes=[],
             service="Unknown",
             value="Unknown",
             wait_impression="Unknown",
             vibe="Unknown",
-            pros=["No review content available."],
+            pros=["No review evidence was available."],
             cons=[],
+            evidence=[],
         )
 
     prompt_template = _load_prompt_template()
     prompt = prompt_template.format(
         restaurant_name=restaurant_name,
         cuisine=cuisine,
-        reviews_json=json.dumps(reviews, ensure_ascii=True),
+        evidence_json=json.dumps([item.model_dump() for item in evidence], ensure_ascii=True),
     )
 
-    payload = await generate_json_with_gemini(prompt=prompt, api_key=gemini_api_key)
-    return ReviewAnalysisResult.model_validate(payload)
+    try:
+        payload = await generate_json_with_gemini(prompt=prompt)
+    except Exception:
+        return ReviewAnalysisResult(
+            signature_dishes=[],
+            service="Unknown",
+            value="Unknown",
+            wait_impression="Unknown",
+            vibe="Unknown",
+            pros=["Review analysis was unavailable."],
+            cons=[],
+            evidence=evidence,
+        )
+
+    merged_payload = {
+        "signature_dishes": payload.get("signature_dishes", []),
+        "service": payload.get("service", "Unknown"),
+        "value": payload.get("value", "Unknown"),
+        "wait_impression": payload.get("wait_impression", "Unknown"),
+        "vibe": payload.get("vibe", "Unknown"),
+        "pros": payload.get("pros", []),
+        "cons": payload.get("cons", []),
+        "evidence": payload.get("evidence", [item.model_dump() for item in evidence]),
+    }
+    return ReviewAnalysisResult.model_validate(merged_payload)
