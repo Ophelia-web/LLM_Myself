@@ -1,6 +1,7 @@
 import json
 import logging
 from pathlib import Path
+from string import Template
 
 from app.models.schemas import ImageAnalysisResult
 from app.services.llm_client import generate_json_with_gemini_multimodal
@@ -32,11 +33,12 @@ async def analyze_restaurant_images(
         return ImageAnalysisResult()
 
     prompt_template = _load_prompt_template()
-    prompt = prompt_template.format(
+    prompt = Template(prompt_template).safe_substitute(
         restaurant_name=restaurant_name,
         cuisine=cuisine,
         photo_urls_json=json.dumps(cleaned_urls, ensure_ascii=True),
     )
+    print("[VLM] prompt constructed successfully")
 
     try:
         payload = await generate_json_with_gemini_multimodal(

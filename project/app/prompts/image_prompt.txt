@@ -5,9 +5,9 @@ Do not use review text or outside knowledge.
 Do not invent details that are not visible.
 If uncertain, use "unknown".
 
-Restaurant: {restaurant_name}
-Cuisine: {cuisine}
-Photo URLs JSON: {photo_urls_json}
+Restaurant: $restaurant_name
+Cuisine: $cuisine
+Photo URLs JSON: $photo_urls_json
 
 Return strict JSON only with this exact schema:
 {
