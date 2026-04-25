@@ -24,6 +24,9 @@ from app.services.review_analyzer import analyze_reviews
 
 
 router = APIRouter(tags=["search"])
+MAX_CANDIDATES = 10
+MAX_VLM_RESTAURANTS = 3
+MAX_VLM_IMAGES_PER_RESTAURANT = 1
 
 
 @router.post("/api/search", response_model=APIResponse)
@@ -40,7 +43,7 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
             lng=geocode_result.lng,
             cuisine=payload.cuisine,
             maps_api_key=maps_api_key,
-            limit=10,
+            limit=MAX_CANDIDATES,
         )
 
         if not candidates:
@@ -52,6 +55,7 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
             )
 
         dossiers = []
+        dossier_context_by_id: dict[int, dict] = {}
         skipped_candidates = 0
         for candidate in candidates:
             try:
@@ -86,21 +90,8 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
                 limit=3,
             )
 
-            try:
-                print(f"[VLM ROUTE] restaurant name: {candidate.name}")
-                print(f"[VLM ROUTE] number of photo_urls: {len(photo_urls)}")
-                print(
-                    f"[VLM ROUTE] first photo_url: {photo_urls[0] if photo_urls else 'N/A'}"
-                )
-                image_analysis = await analyze_restaurant_images(
-                    restaurant_name=candidate.name,
-                    cuisine=payload.cuisine,
-                    photo_urls=photo_urls,
-                    gemini_api_key=gemini_api_key,
-                )
-            except Exception as exc:
-                print("[VLM ERROR]", repr(exc))
-                image_analysis = ImageAnalysisResult()
+            # Initial dossier uses default image analysis. VLM is deferred to preliminary Top-3.
+            image_analysis = ImageAnalysisResult()
 
             try:
                 dossier = await build_dossier(
@@ -111,6 +102,11 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
                     photo_urls=photo_urls,
                 )
                 dossiers.append(dossier)
+                dossier_context_by_id[id(dossier)] = {
+                    "place": candidate,
+                    "review_analysis": review_analysis,
+                    "photo_urls": photo_urls,
+                }
             except Exception:
                 skipped_candidates += 1
                 fallback_dossier = _build_fallback_dossier(
@@ -132,6 +128,11 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
                     cuisine=payload.cuisine,
                 )
                 dossiers.append(fallback_dossier)
+                dossier_context_by_id[id(fallback_dossier)] = {
+                    "place": candidate,
+                    "review_analysis": review_analysis,
+                    "photo_urls": photo_urls,
+                }
 
         if not dossiers:
             return APIResponse(
@@ -144,8 +145,64 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
                 ],
             )
 
-        ranked = rank_dossiers(dossiers, payload)
-        top_results = ranked[:3]
+        preliminary_ranked = rank_dossiers(dossiers, payload)
+        preliminary_top = preliminary_ranked[:MAX_VLM_RESTAURANTS]
+        print(
+            "[VLM] preliminary top restaurants selected:",
+            [r.dossier.restaurant_name for r in preliminary_top],
+        )
+        if len(dossiers) > MAX_VLM_RESTAURANTS:
+            print("[VLM] skipped VLM for non-top-3 candidates")
+
+        final_dossiers: list[DossierResult] = []
+        for ranked_result in preliminary_top:
+            dossier = ranked_result.dossier
+            context = dossier_context_by_id.get(id(dossier), {})
+            place = context.get("place")
+            review_analysis = context.get("review_analysis")
+            photo_urls = context.get("photo_urls", dossier.photo_urls)
+            vlm_photo_urls = (photo_urls or [])[:MAX_VLM_IMAGES_PER_RESTAURANT]
+
+            print("[VLM] analyzing only Top-3 restaurant:", dossier.restaurant_name)
+            print("[VLM ROUTE] restaurant name:", dossier.restaurant_name)
+            print("[VLM ROUTE] number of photo_urls:", len(vlm_photo_urls))
+            if vlm_photo_urls:
+                print("[VLM ROUTE] first photo_url: [redacted]")
+
+            try:
+                image_analysis = await analyze_restaurant_images(
+                    restaurant_name=dossier.restaurant_name,
+                    cuisine=payload.cuisine,
+                    photo_urls=vlm_photo_urls,
+                    gemini_api_key=gemini_api_key,
+                )
+            except Exception as exc:
+                print("[VLM ERROR]", repr(exc))
+                image_analysis = ImageAnalysisResult()
+
+            if place is None or review_analysis is None:
+                final_dossiers.append(
+                    dossier.model_copy(update={"image_analysis": image_analysis})
+                )
+                continue
+
+            try:
+                rebuilt_dossier = await build_dossier(
+                    place=place,
+                    review_analysis=review_analysis,
+                    user_request=payload,
+                    image_analysis=image_analysis,
+                    photo_urls=photo_urls,
+                )
+                final_dossiers.append(rebuilt_dossier)
+            except Exception as exc:
+                print("[VLM ERROR]", repr(exc))
+                final_dossiers.append(
+                    dossier.model_copy(update={"image_analysis": image_analysis})
+                )
+
+        ranked = rank_dossiers(final_dossiers, payload)
+        top_results = ranked[:MAX_VLM_RESTAURANTS]
 
         for ranked_result in top_results:
             try:
@@ -159,6 +216,7 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
             top_results=top_results,
             notes=[
                 "Ranked with rule-based scoring using cuisine, budget, ratings, review and visual evidence.",
+                f"VLM analysis was limited to preliminary Top-{MAX_VLM_RESTAURANTS} restaurants.",
                 "Dossiers were written to output/dossiers as markdown files.",
                 f"Skipped candidates due to processing errors: {skipped_candidates}.",
             ],
@@ -176,6 +234,8 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Search pipeline failed: {exc}",
         ) from exc
+
+
 def _build_fallback_dossier(
     candidate_name: str,
     candidate_rating: float,
