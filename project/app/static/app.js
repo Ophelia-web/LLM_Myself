@@ -96,6 +96,27 @@ function toListItems(values, fallback = "") {
   return cleaned.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
 }
 
+function extractRecommendedDishes(signatureDishes) {
+  if (!Array.isArray(signatureDishes)) {
+    return [];
+  }
+  const seen = new Set();
+  const cleaned = [];
+  for (const dish of signatureDishes) {
+    const normalized = compactText(dish);
+    if (!normalized) {
+      continue;
+    }
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) {
+      continue;
+    }
+    seen.add(key);
+    cleaned.push(normalized);
+  }
+  return cleaned;
+}
+
 function priceLevelText(priceLevel) {
   const level = Number(priceLevel || 0);
   if (!level || level < 1 || level > 4) {
@@ -265,7 +286,7 @@ function renderCard(item, index) {
     dossier.why_recommended,
     "A reliable choice with strong ratings and useful evidence."
   );
-  const dishes = compactText((dossier.signature_dishes || []).join(", "));
+  const recommendedDishes = extractRecommendedDishes(dossier.signature_dishes);
   const address = compactText(dossier.address);
   const title = compactText(dossier.restaurant_name) || "Restaurant pick";
   const label = RANK_LABELS[index] || `#${index + 1} Top Pick`;
@@ -307,7 +328,13 @@ function renderCard(item, index) {
           }
           ${priceLevel ? `<p class="meta-line"><strong>Price level:</strong> ${escapeHtml(priceLevel)}${priceLabel ? ` (${escapeHtml(priceLabel)})` : ""}</p>` : ""}
           <p class="meta-line"><strong>Summary:</strong> ${escapeHtml(normalizedSummary)}</p>
-          ${dishes ? `<p><strong>Signature dishes:</strong> ${escapeHtml(dishes)}</p>` : ""}
+          ${
+            recommendedDishes.length
+              ? `<p><strong>Recommended dishes:</strong> ${escapeHtml(
+                  recommendedDishes.join(", ")
+                )}</p>`
+              : ""
+          }
           ${
             reservationText && !/not available/i.test(reservationText)
               ? `<p><strong>${reservationText}</strong></p>`
