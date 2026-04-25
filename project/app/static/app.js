@@ -4,34 +4,15 @@ const resultsEl = document.getElementById("results");
 const advancedSettingsEl = document.getElementById("advanced-settings");
 const MAPS_KEY_STORAGE = "restaurant-demo.googleMapsApiKey";
 const GEMINI_KEY_STORAGE = "restaurant-demo.geminiApiKey";
-let mapsApiKeyForPhoto = "";
-const ILLUSTRATED_FALLBACKS = [
-  "https://images.unsplash.com/vector-1767592996701-4408079ed440?fm=jpg&q=70&w=480&auto=format&fit=crop",
-  "https://images.unsplash.com/vector-1754199100419-181232bd1bb9?fm=jpg&q=70&w=480&auto=format&fit=crop",
-  "https://images.unsplash.com/vector-1760911515343-43558fe0c989?fm=jpg&q=70&w=480&auto=format&fit=crop",
-];
 const RANK_LABELS = ["Best Overall", "Great Value", "Hidden Gem"];
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? "")
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-function buildGooglePhotoUrl(photoReference, mapsApiKey, maxWidth = 720) {
-  const params = new URLSearchParams({
-    maxwidth: String(maxWidth),
-    photoreference: photoReference,
-    key: mapsApiKey,
-  });
-  return `https://maps.googleapis.com/maps/api/place/photo?${params.toString()}`;
-}
-
-function pickFallbackImage(index) {
-  return ILLUSTRATED_FALLBACKS[index % ILLUSTRATED_FALLBACKS.length];
+    .replaceAll("'", "&#039;");
 }
 
 function compactText(value) {
@@ -56,6 +37,10 @@ function oneSentence(text, fallback) {
 
 function formatBudgetLabel(level) {
   const labels = {
+    low: "Low ($)",
+    medium: "Medium ($$)",
+    high: "High ($$$)",
+    luxury: "Luxury ($$$$)",
     1: "Inexpensive",
     2: "Moderate",
     3: "Expensive",
@@ -65,7 +50,13 @@ function formatBudgetLabel(level) {
 }
 
 function mapLink(dossier) {
-  return dossier.reservation_link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dossier.restaurant_name || "")}`;
+  return (
+    dossier.maps_link ||
+    dossier.reservation_link ||
+    `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+      dossier.restaurant_name || ""
+    )}`
+  );
 }
 
 function resolveReservationText(dossier) {
@@ -87,52 +78,187 @@ function resolveReservationText(dossier) {
   return "Reservation: Not available";
 }
 
-function safeLine(label, value) {
-  const text = compactText(value);
-  if (!text) {
-    return "";
+function toListItems(values, fallback = "Not enough evidence yet.") {
+  const cleaned = Array.isArray(values)
+    ? values.map((item) => compactText(item)).filter(Boolean)
+    : [];
+  if (!cleaned.length) {
+    return `<li>${escapeHtml(fallback)}</li>`;
   }
-  return `<p class="detail-line"><strong>${label}:</strong> ${escapeHtml(text)}</p>`;
+  return cleaned.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
 }
 
-function renderCard(item, index, selectedBudget) {
-  const dossier = item.dossier || {};
-  const score = Math.round(Number(item?.score?.total || 0));
-  const photos = (dossier.photos || []).slice(0, 3);
-  const photoGallery = photos.length
-    ? photos
+function priceLevelText(priceLevel) {
+  const level = Number(priceLevel || 0);
+  if (!level || level < 1 || level > 4) {
+    return "Not available";
+  }
+  return "$".repeat(level);
+}
+
+function renderHeroMedia(dossier) {
+  const title = compactText(dossier.restaurant_name) || "Restaurant pick";
+  const heroUrl = dossier.photo_urls?.[0];
+  if (heroUrl) {
+    return `
+      <div class="card-hero">
+        <img
+          class="hero-image"
+          src="${escapeHtml(heroUrl)}"
+          alt="${escapeHtml(title)} hero photo"
+          loading="lazy"
+        />
+        <div class="hero-gradient"></div>
+      </div>
+    `;
+  }
+
+  const initial = title.slice(0, 1).toUpperCase();
+  return `
+    <div class="card-hero card-hero-placeholder">
+      <div class="placeholder-initial">${escapeHtml(initial || "R")}</div>
+      <p>No photo available.</p>
+    </div>
+  `;
+}
+
+function renderThumbnails(dossier) {
+  const thumbnails = (dossier.photo_urls || []).slice(1, 3);
+  if (!thumbnails.length) {
+    return "";
+  }
+  return `
+    <div class="thumb-row">
+      ${thumbnails
         .map(
-          (photo, photoIndex) => `
+          (url, index) => `
             <img
-              src="${escapeHtml(
-                buildGooglePhotoUrl(photo.photo_reference, mapsApiKeyForPhoto, photoIndex === 0 ? 900 : 560)
-              )}"
-              alt="${escapeHtml(dossier.restaurant_name || "Restaurant")} photo ${photoIndex + 1}"
+              src="${escapeHtml(url)}"
+              alt="${escapeHtml(dossier.restaurant_name || "Restaurant")} thumbnail ${
+                index + 2
+              }"
               loading="lazy"
-              onerror="this.onerror=null;this.src='${pickFallbackImage(photoIndex)}'"
             />
           `
         )
-        .join("")
-    : ILLUSTRATED_FALLBACKS.map(
-        (imgSrc, imgIndex) =>
-          `<img src="${imgSrc}" alt="Illustrated food art ${imgIndex + 1}" loading="lazy" />`
-      ).join("");
+        .join("")}
+    </div>
+  `;
+}
+
+function renderReviewEvidenceSection(dossier) {
+  const evidence = Array.isArray(dossier.review_evidence)
+    ? dossier.review_evidence
+    : [];
+  if (!evidence.length) {
+    return `
+      <section class="info-block">
+        <h4>Review RAG Evidence</h4>
+        <p class="muted">No relevant review evidence was retrieved.</p>
+      </section>
+    `;
+  }
+
+  const evidenceCards = evidence
+    .map((item) => {
+      const text = compactText(item.text) || "No snippet text.";
+      const byline = [
+        compactText(item.author_name) || "Anonymous",
+        compactText(item.relative_time_description),
+        item.rating ? `Rating ${item.rating}` : "",
+      ]
+        .filter(Boolean)
+        .join(" • ");
+      const matchedTerms = Array.isArray(item.matched_terms)
+        ? item.matched_terms.filter(Boolean)
+        : [];
+      return `
+        <article class="evidence-item">
+          <p class="evidence-text">"${escapeHtml(text)}"</p>
+          <p class="evidence-meta">${escapeHtml(byline || "Google Places review")}</p>
+          ${
+            matchedTerms.length
+              ? `<p class="evidence-meta"><strong>Matched terms:</strong> ${escapeHtml(
+                  matchedTerms.join(", ")
+                )}</p>`
+              : ""
+          }
+        </article>
+      `;
+    })
+    .join("");
+
+  return `
+    <section class="info-block">
+      <h4>Review RAG Evidence</h4>
+      <div class="evidence-list">${evidenceCards}</div>
+    </section>
+  `;
+}
+
+function renderImageAnalysisSection(dossier) {
+  const image = dossier.image_analysis || {};
+  return `
+    <section class="info-block">
+      <h4>VLM Image Analysis</h4>
+      <p><strong>Visual vibe:</strong> ${escapeHtml(compactText(image.visual_vibe) || "unknown")}</p>
+      <p><strong>Space impression:</strong> ${escapeHtml(
+        compactText(image.space_impression) || "unknown"
+      )}</p>
+      <p><strong>Group suitability:</strong> ${escapeHtml(
+        compactText(image.group_suitability) || "unknown"
+      )}</p>
+      <p><strong>Visual confidence:</strong> ${escapeHtml(
+        compactText(image.visual_confidence) || "low"
+      )}</p>
+      <p><strong>Food visual cues:</strong></p>
+      <ul>${toListItems(image.food_visual_cues, "Unknown")}</ul>
+      <p class="muted">${escapeHtml(
+        compactText(image.image_evidence_summary) || "Image analysis was unavailable."
+      )}</p>
+    </section>
+  `;
+}
+
+function renderScoreBreakdown(item) {
+  return `
+    <details class="score-breakdown">
+      <summary>Score Breakdown</summary>
+      <ul>
+        <li>Cuisine match: ${escapeHtml(item?.score?.cuisine_match ?? "N/A")}</li>
+        <li>Budget match: ${escapeHtml(item?.score?.budget_match ?? "N/A")}</li>
+        <li>Rating: ${escapeHtml(item?.score?.rating ?? "N/A")}</li>
+        <li>Review value match: ${escapeHtml(item?.score?.review_value_match ?? "N/A")}</li>
+        <li>Vibe fit: ${escapeHtml(item?.score?.vibe_fit ?? "N/A")}</li>
+        <li>Visual vibe fit: ${escapeHtml(item?.score?.visual_vibe_fit ?? "N/A")}</li>
+        <li>Evidence quality: ${escapeHtml(item?.score?.evidence_quality ?? "N/A")}</li>
+        <li>Wait penalty: ${escapeHtml(item?.score?.wait_penalty ?? "N/A")}</li>
+        <li><strong>Total: ${escapeHtml(item?.score?.total ?? "N/A")}</strong></li>
+      </ul>
+    </details>
+  `;
+}
+
+function renderCard(item, index) {
+  const dossier = item.dossier || {};
+  const score = Math.round(Number(item?.score?.total || 0));
   const shortReason = oneSentence(
     dossier.why_recommended,
-    "A reliable choice with strong ratings and a well-rounded dining experience."
+    "A reliable choice with strong ratings and useful evidence."
   );
   const dishes = compactText((dossier.signature_dishes || []).join(", "));
-  const vibe = compactText(dossier.vibe);
-  const wait = compactText(dossier.wait_impression);
   const address = compactText(dossier.address);
   const title = compactText(dossier.restaurant_name) || "Restaurant pick";
   const label = RANK_LABELS[index] || `#${index + 1} Top Pick`;
   const mapsUrl = mapLink(dossier);
+  const summary = compactText(
+    [dossier.service, dossier.value, dossier.vibe].filter(Boolean).join(" | ")
+  );
 
   return `
     <article class="card result-card">
-      <div class="photo-strip">${photoGallery}</div>
+      ${renderHeroMedia(dossier)}
+      ${renderThumbnails(dossier)}
       <div class="card-body">
         <div class="card-top">
           <div>
@@ -140,7 +266,8 @@ function renderCard(item, index, selectedBudget) {
             <h3>${escapeHtml(title)}</h3>
           </div>
           <div class="badge-row">
-            <span class="badge">${escapeHtml(dossier.rating ?? "N/A")}</span>
+            <span class="badge">Rating ${escapeHtml(dossier.rating ?? "N/A")}</span>
+            <span class="badge">${escapeHtml(dossier.user_rating_count ?? 0)} ratings</span>
             <span class="badge">Match score: ${score} / 100</span>
           </div>
         </div>
@@ -149,26 +276,19 @@ function renderCard(item, index, selectedBudget) {
             ? `<p class="meta-line">${escapeHtml(address)}</p>`
             : ""
         }
-        <p class="meta-line"><strong>Price range:</strong> ${formatBudgetLabel(selectedBudget)}</p>
-        <p class="why"><strong>Why you'll like it:</strong> ${escapeHtml(shortReason)}</p>
-        ${safeLine("Must-try dishes", dishes)}
-        ${safeLine("Atmosphere", vibe)}
-        ${safeLine("Wait time", wait)}
+        <p class="meta-line"><strong>Price level:</strong> ${escapeHtml(
+          priceLevelText(dossier.price_level)
+        )} (${escapeHtml(formatBudgetLabel(dossier.price_level))})</p>
+        <p class="meta-line"><strong>Summary:</strong> ${escapeHtml(summary || "Unknown")}</p>
+        <p class="why"><strong>Why recommended:</strong> ${escapeHtml(shortReason)}</p>
+        <p><strong>Signature dishes:</strong> ${escapeHtml(dishes || "Unknown")}</p>
         <p><strong>${resolveReservationText(dossier)}</strong></p>
         <a class="maps-link" href="${escapeHtml(
           mapsUrl
         )}" target="_blank" rel="noopener noreferrer">View on Maps</a>
-        <details class="why-match">
-          <summary>Why this match</summary>
-          <ul>
-            <li>Cuisine match: ${escapeHtml(item?.score?.cuisine_match ?? "N/A")}</li>
-            <li>Budget match: ${escapeHtml(item?.score?.budget_match ?? "N/A")}</li>
-            <li>Rating: ${escapeHtml(item?.score?.rating ?? "N/A")}</li>
-            <li>Review value match: ${escapeHtml(item?.score?.review_value_match ?? "N/A")}</li>
-            <li>Atmosphere fit: ${escapeHtml(item?.score?.vibe_fit ?? "N/A")}</li>
-            <li>Wait penalty: ${escapeHtml(item?.score?.wait_penalty ?? "N/A")}</li>
-          </ul>
-        </details>
+        ${renderReviewEvidenceSection(dossier)}
+        ${renderImageAnalysisSection(dossier)}
+        ${renderScoreBreakdown(item)}
       </div>
     </article>
   `;
@@ -206,7 +326,7 @@ form.addEventListener("submit", async (event) => {
     zipCode: formData.get("zipCode")?.toString().trim(),
     cuisine: formData.get("cuisine")?.toString().trim(),
     partySize: Number(formData.get("partySize")),
-    budget: Number(formData.get("budget")),
+    budget: formData.get("budget")?.toString().trim().toLowerCase(),
   };
 
   if (!payload.googleMapsApiKey || !payload.geminiApiKey) {
@@ -217,8 +337,6 @@ form.addEventListener("submit", async (event) => {
   }
 
   persistKeys(payload);
-  mapsApiKeyForPhoto = payload.googleMapsApiKey;
-
   statusEl.textContent = "Finding the best spots for you...";
   resultsEl.innerHTML = `
     <article class="card skeleton-card" aria-hidden="true"></article>
@@ -253,7 +371,7 @@ form.addEventListener("submit", async (event) => {
       return;
     }
 
-    resultsEl.innerHTML = top.map((item, i) => renderCard(item, i, payload.budget)).join("");
+    resultsEl.innerHTML = top.map((item, i) => renderCard(item, i)).join("");
   } catch (error) {
     statusEl.textContent = "Search failed.";
     resultsEl.innerHTML = `<p class="error">${escapeHtml(error.message || "Unknown error")}</p>`;

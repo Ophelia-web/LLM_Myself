@@ -111,7 +111,8 @@ def _normalize_place(raw: dict[str, Any]) -> PlaceResult | None:
         )
 
     reservable = raw.get("reservable")
-    reservation_link = raw.get("website") or raw.get("url")
+    maps_link = raw.get("url")
+    reservation_link = raw.get("website") or maps_link
     if reservation_link == "":
         reservation_link = None
     if reservable is None and reservation_link:
@@ -129,5 +130,6 @@ def _normalize_place(raw: dict[str, Any]) -> PlaceResult | None:
         reviews=reviews,
         reservable=reservable if isinstance(reservable, bool) else None,
         reservation_link=reservation_link if isinstance(reservation_link, str) else None,
+        maps_link=maps_link if isinstance(maps_link, str) else None,
         location=PlaceLocation(lat=lat, lng=lng),
     )

@@ -4,6 +4,9 @@ Input data:
 - user_request_json: {user_request_json}
 - place_json: {place_json}
 - review_analysis_json: {review_analysis_json}
+- review_evidence_json: {review_evidence_json}
+- image_analysis_json: {image_analysis_json}
+- photo_urls_json: {photo_urls_json}
 
 Return ONLY valid JSON with this exact schema:
 {{
@@ -20,4 +23,6 @@ Rules:
 2) Be conservative; if uncertain, use "Unknown".
 3) why_recommended must be one sentence, with max 16 words.
 4) Do not repeat user input terms verbatim unless necessary.
-5) Output MUST be strict valid JSON.
+5) Mention review evidence if available and image evidence if available.
+6) Do not invent facts not supported by reviews or images.
+7) Output MUST be strict valid JSON.
