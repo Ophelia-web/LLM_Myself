@@ -42,7 +42,10 @@ body {
   grid-template-columns: 1.12fr 0.88fr;
   align-items: stretch;
   gap: 18px;
-  padding: 24px 24px 22px;
+  padding: 18px 20px;
+  min-height: 240px;
+  max-height: 300px;
+  overflow: hidden;
 }
 
 .hero-content {
@@ -64,7 +67,7 @@ body {
 h1 {
   margin: 0;
   font-family: "Playfair Display", "Noto Serif JP", serif;
-  font-size: clamp(2rem, 3vw, 2.9rem);
+  font-size: clamp(1.7rem, 2.4vw, 2.35rem);
   line-height: 1.08;
   color: #4d4036;
 }
@@ -72,8 +75,8 @@ h1 {
 .subtitle {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 0.97rem;
-  line-height: 1.5;
+  font-size: 0.92rem;
+  line-height: 1.42;
 }
 
 .feature-list {
@@ -86,12 +89,12 @@ h1 {
 }
 
 .feature-list li {
-  font-size: 0.79rem;
+  font-size: 0.76rem;
   color: #65574c;
   background: var(--surface-muted);
   border: 1px solid rgba(132, 110, 93, 0.16);
   border-radius: 999px;
-  padding: 5px 10px;
+  padding: 4px 9px;
 }
 
 .hero-visual {
@@ -102,7 +105,7 @@ h1 {
 
 .hero-visual img {
   width: 100%;
-  height: 132px;
+  height: 94px;
   object-fit: cover;
   border-radius: 12px;
   border: 1px solid rgba(0, 0, 0, 0.05);
@@ -500,12 +503,14 @@ h1 {
 
   .hero {
     grid-template-columns: 1fr;
-    padding: 20px 16px 18px;
-    gap: 14px;
+    min-height: 0;
+    max-height: none;
+    padding: 16px;
+    gap: 12px;
   }
 
   .hero-visual img {
-    height: 110px;
+    height: 86px;
   }
 
   .search-panel {
