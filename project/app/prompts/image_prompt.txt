@@ -17,3 +17,9 @@ Return strict JSON only with this schema:
   "visual_confidence": "medium",
   "image_evidence_summary": "Photos suggest..."
 }
+
+Rules:
+1) Output ONLY strict valid JSON. No markdown, no prose outside JSON.
+2) Analyze ambience, space impression, food visual cues, and group suitability.
+3) If uncertain, use "unknown".
+4) Keep food_visual_cues short (0-4 concise items).

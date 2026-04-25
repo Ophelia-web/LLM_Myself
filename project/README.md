@@ -77,6 +77,25 @@ Open: `http://localhost:8000`
 
 Health: `GET /health`
 
+## Isolated VLM test helper
+
+Use this script to test VLM on one restaurant photo URL before running full search:
+
+```bash
+cd project
+export GEMINI_API_KEY="AIza..."
+python3 scripts/test_vlm_image.py \
+  --restaurant "Demo Bistro" \
+  --cuisine "italian" \
+  --image-url "https://maps.googleapis.com/maps/api/place/photo?..."
+```
+
+Optional log level:
+
+```bash
+python3 scripts/test_vlm_image.py ... --log-level DEBUG
+```
+
 ## Request/response shape
 
 ### Request (`POST /api/search`)
@@ -176,6 +195,24 @@ The app is built to continue gracefully:
 - partial Google Places records -> best-effort normalized place metadata
 
 If one candidate fails during module processing, the route continues processing remaining candidates and still returns valid JSON.
+
+## Isolated VLM test helper
+
+Use the helper script to validate image analysis on one image before a full search run:
+
+```bash
+cd project
+python3 scripts/test_vlm_image.py \
+  --gemini-key "YOUR_GEMINI_KEY" \
+  --name "Test Restaurant" \
+  --cuisine "japanese" \
+  --image-url "https://maps.googleapis.com/maps/api/place/photo?..."
+```
+
+What it does:
+- logs image fetch status and content type
+- sends the image as Gemini `inline_data` (base64)
+- prints parsed JSON output from VLM analysis
 
 ## Class demo script (quick talk track)
 
