@@ -104,47 +104,33 @@ function priceLevelText(priceLevel) {
   return "$".repeat(level);
 }
 
-function renderHeroMedia(dossier, title) {
+function renderImageGallery(dossier, title) {
   const displayTitle = title || compactText(dossier.restaurant_name) || "Restaurant pick";
-  const heroUrl = dossier.photo_urls?.[0];
-  if (heroUrl) {
+  const images = Array.isArray(dossier.photo_urls)
+    ? dossier.photo_urls.filter(Boolean).slice(0, 3)
+    : [];
+
+  if (!images.length) {
+    const initial = (displayTitle || "R").slice(0, 1).toUpperCase();
     return `
-      <div class="card-hero">
-        <img
-          class="hero-image"
-          src="${escapeHtml(heroUrl)}"
-          alt="${escapeHtml(displayTitle)} hero photo"
-          loading="lazy"
-        />
-        <div class="hero-gradient"></div>
+      <div class="image-gallery">
+        <div class="gallery-item gallery-placeholder">
+          <div class="placeholder-initial">${escapeHtml(initial || "R")}</div>
+          <p>No photo available.</p>
+        </div>
       </div>
     `;
   }
 
-  const initial = (displayTitle || "R").slice(0, 1).toUpperCase();
   return `
-    <div class="card-hero card-hero-placeholder">
-      <div class="placeholder-initial">${escapeHtml(initial || "R")}</div>
-      <p>No photo available.</p>
-    </div>
-  `;
-}
-
-function renderThumbnails(dossier) {
-  const thumbnails = (dossier.photo_urls || []).slice(1, 3);
-  if (!thumbnails.length) {
-    return "";
-  }
-  return `
-    <div class="thumb-row">
-      ${thumbnails
+    <div class="image-gallery">
+      ${images
         .map(
           (url, index) => `
             <img
+              class="gallery-item"
               src="${escapeHtml(url)}"
-              alt="${escapeHtml(dossier.restaurant_name || "Restaurant")} thumbnail ${
-                index + 2
-              }"
+              alt="${escapeHtml(displayTitle)} image ${index + 1}"
               loading="lazy"
             />
           `
@@ -299,8 +285,7 @@ function renderCard(item, index) {
     <article class="card result-card">
       <div class="result-grid">
         <div class="media-column">
-          ${renderHeroMedia(dossier, title)}
-          ${renderThumbnails(dossier)}
+          ${renderImageGallery(dossier, title)}
         </div>
         <div class="card-body">
           <div class="card-top">
