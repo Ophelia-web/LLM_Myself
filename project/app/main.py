@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -11,6 +12,10 @@ from app.routes.search import router as search_router
 BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(title="Restaurant Recommendation Demo", version="0.1.0")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
+)
 
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
