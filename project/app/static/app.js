@@ -228,6 +228,16 @@ function renderImageAnalysisSection(dossier) {
     visualCues.length > 0 ||
     (Boolean(evidenceSummary) &&
       !/unavailable/i.test(evidenceSummary));
+  const confidenceIsLow = (image.visual_confidence || "").toString().toLowerCase() === "low";
+
+  if (!hasUsefulImageData && confidenceIsLow) {
+    return `
+      <section class="info-block">
+        <h4>VLM Image Analysis</h4>
+        <p class="muted">Image analysis unavailable.</p>
+      </section>
+    `;
+  }
 
   if (!hasUsefulImageData) {
     return `

@@ -24,12 +24,19 @@ def _resolve_gemini_api_key() -> str:
     return api_key
 
 
-def _build_gemini_url(model: str) -> str:
-    return GEMINI_URL_TEMPLATE.format(model=model, api_key=_resolve_gemini_api_key())
+def _resolve_api_key(api_key: str | None = None) -> str:
+    if api_key and api_key.strip():
+        return api_key.strip()
+    return _resolve_gemini_api_key()
+
+
+def _build_gemini_url(model: str, api_key: str | None = None) -> str:
+    return GEMINI_URL_TEMPLATE.format(model=model, api_key=_resolve_api_key(api_key))
 
 
 async def generate_json_with_gemini(
     prompt: str,
+    api_key: str | None = None,
     model: str = "gemini-2.5-flash",
     temperature: float = 0.2,
 ) -> dict[str, Any]:
@@ -40,13 +47,14 @@ async def generate_json_with_gemini(
             "responseMimeType": "application/json",
         },
     }
-    data = await _call_gemini(_build_gemini_url(model), payload)
+    data = await _call_gemini(_build_gemini_url(model, api_key=api_key), payload)
     return _safe_json_parse(_extract_response_text(data))
 
 
 async def generate_json_with_gemini_multimodal(
     prompt: str,
     image_urls: list[str],
+    api_key: str | None = None,
     model: str = "gemini-2.5-flash",
     temperature: float = 0.2,
 ) -> dict[str, Any]:
@@ -55,10 +63,10 @@ async def generate_json_with_gemini_multimodal(
     if not cleaned_urls:
         raise ValueError("No photo URLs available for multimodal analysis.")
 
-    url = _build_gemini_url(model)
+    url = _build_gemini_url(model, api_key=api_key)
     inline_data_payload = await _build_inline_image_payload(
         prompt=prompt,
-        image_urls=cleaned_urls,
+        image_urls=cleaned_urls[:3],
         temperature=temperature,
     )
     inline_response = await _call_gemini(url, inline_data_payload)
@@ -70,6 +78,7 @@ async def _build_inline_image_payload(
     image_urls: list[str],
     temperature: float,
 ) -> dict[str, Any]:
+    logger.info("Starting server-side image fetch for %s URLs.", len(image_urls))
     parts: list[dict[str, Any]] = [{"text": prompt}]
     inline_images = 0
     async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
@@ -84,6 +93,10 @@ async def _build_inline_image_payload(
                 )
                 response.raise_for_status()
                 content_type = response.headers.get("content-type", "")
+                if not content_type.lower().startswith("image/"):
+                    raise ValueError(
+                        f"URL did not return image content-type: {content_type}"
+                    )
                 mime_type = _resolve_mime_type(image_url, content_type)
                 encoded_bytes = base64.b64encode(response.content).decode("ascii")
                 parts.append(
@@ -106,6 +119,8 @@ async def _build_inline_image_payload(
     if inline_images == 0:
         raise ValueError("No image bytes were retrievable from the provided photo URLs.")
 
+    logger.info("Prepared %s inline images for Gemini request.", inline_images)
+
     return {
         "contents": [{"parts": parts}],
         "generationConfig": {
@@ -118,7 +133,7 @@ async def _build_inline_image_payload(
 def _resolve_mime_type(image_url: str, content_type_header: str) -> str:
     content_type = content_type_header.split(";")[0].strip().lower()
     if content_type.startswith("image/"):
-        return content_type
+        return "image/jpeg" if content_type == "image/jpg" else content_type
     guessed, _ = mimetypes.guess_type(image_url)
     if guessed and guessed.startswith("image/"):
         return guessed
