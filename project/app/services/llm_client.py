@@ -78,7 +78,7 @@ async def _build_inline_image_payload(
     image_urls: list[str],
     temperature: float,
 ) -> dict[str, Any]:
-    logger.info("Starting server-side image fetch for %s URLs.", len(image_urls))
+    logger.info("[VLM] fetching image bytes for %s URLs", len(image_urls))
     parts: list[dict[str, Any]] = [{"text": prompt}]
     inline_images = 0
     async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
@@ -86,7 +86,7 @@ async def _build_inline_image_payload(
             try:
                 response = await client.get(image_url)
                 logger.info(
-                    "Fetched image URL status=%s content-type=%s url=%s",
+                    "[VLM] fetch status=%s content-type=%s url=%s",
                     response.status_code,
                     response.headers.get("content-type", ""),
                     image_url,
@@ -143,9 +143,12 @@ def _resolve_mime_type(image_url: str, content_type_header: str) -> str:
 async def _call_gemini(url: str, payload: dict[str, Any]) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=45.0) as client:
         try:
+            logger.info("[VLM] calling Gemini multimodal")
             response = await client.post(url, json=payload)
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            logger.info("[VLM] raw Gemini response: %s", json.dumps(data)[:1500])
+            return data
         except httpx.HTTPStatusError as exc:
             logger.exception(
                 "Gemini API HTTP error status=%s body=%s",
