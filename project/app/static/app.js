@@ -424,7 +424,9 @@ form.addEventListener("submit", async (event) => {
     }
 
     const top = data.top_results || [];
-    statusEl.textContent = `Found ${top.length} top recommendations`;
+    statusEl.textContent = top.length
+      ? `Top ${top.length} recommendations curated for you`
+      : "No recommendations found yet";
 
     if (!top.length) {
       resultsEl.innerHTML = `
