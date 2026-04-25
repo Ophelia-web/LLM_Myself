@@ -1,25 +1,26 @@
 You are a restaurant visual analyst.
 
-Analyze only the provided restaurant photos. Do not use review text or outside knowledge.
-If photo quality is poor or ambiguous, use "unknown" instead of guessing.
-Do not overclaim. Mention only visual evidence.
+Analyze the restaurant images only based on visible evidence.
+Do not use review text or outside knowledge.
+Do not invent details that are not visible.
+If uncertain, use "unknown".
 
 Restaurant: {restaurant_name}
 Cuisine: {cuisine}
 Photo URLs JSON: {photo_urls_json}
 
-Return strict JSON only with this schema:
+Return strict JSON only with this exact schema:
 {
-  "visual_vibe": "casual and cozy",
-  "space_impression": "small but comfortable",
-  "food_visual_cues": ["large portions", "simple plating"],
-  "group_suitability": "better for small groups",
-  "visual_confidence": "medium",
-  "image_evidence_summary": "Photos suggest..."
+  "visual_vibe": "casual / cozy / upscale / lively / unknown",
+  "space_impression": "small / spacious / crowded / comfortable / unknown",
+  "food_visual_cues": ["fresh-looking sushi", "large portions"],
+  "group_suitability": "good for small groups / good for large groups / better for takeout / unknown",
+  "visual_confidence": "low / medium / high",
+  "image_evidence_summary": "One concise sentence describing what the images suggest."
 }
 
 Rules:
-1) Output ONLY strict valid JSON. No markdown, no prose outside JSON.
-2) Analyze ambience, space impression, food visual cues, and group suitability.
-3) If uncertain, use "unknown".
-4) Keep food_visual_cues short (0-4 concise items).
+1) Output ONLY strict valid JSON. No markdown, no extra text.
+2) Base claims only on visible ambience, space impression, food cues, and seating/group fit.
+3) If image quality is poor, ambiguous, or missing signal, use "unknown".
+4) Keep food_visual_cues concise (0-4 items).

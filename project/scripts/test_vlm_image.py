@@ -2,8 +2,6 @@ import argparse
 import asyncio
 import json
 import logging
-import os
-
 from app.services.image_analyzer import analyze_restaurant_images
 
 
@@ -31,11 +29,11 @@ def parse_args() -> argparse.Namespace:
 
 
 async def run_test(args: argparse.Namespace) -> None:
-    os.environ["GEMINI_API_KEY"] = args.gemini_key
     result = await analyze_restaurant_images(
         restaurant_name=args.name,
         cuisine=args.cuisine,
         photo_urls=[args.image_url],
+        gemini_api_key=args.gemini_key,
     )
     print(json.dumps(result.model_dump(), indent=2, ensure_ascii=True))
 

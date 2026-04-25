@@ -18,8 +18,10 @@ async def analyze_restaurant_images(
     restaurant_name: str,
     cuisine: str,
     photo_urls: list[str],
+    gemini_api_key: str | None = None,
 ) -> ImageAnalysisResult:
     cleaned_urls = [url for url in photo_urls if url]
+    logger.info("[VLM] incoming photo_urls=%s", cleaned_urls)
     logger.info(
         "Starting image analysis for '%s' with %s photo URLs.",
         restaurant_name,
@@ -40,10 +42,12 @@ async def analyze_restaurant_images(
         payload = await generate_json_with_gemini_multimodal(
             prompt=prompt,
             image_urls=cleaned_urls,
+            api_key=gemini_api_key,
             model="gemini-2.5-flash",
         )
         return ImageAnalysisResult.model_validate(payload)
     except Exception as exc:
+        print("[VLM ERROR]", repr(exc))
         logger.exception(
             "Image analysis failed for '%s'. Falling back to unknown values. reason=%s",
             restaurant_name,

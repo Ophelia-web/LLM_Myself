@@ -12,7 +12,7 @@ from app.models.schemas import (
 from app.services.dossier_generator import build_dossier
 from app.services.geocode_zip import geocode_zip
 from app.services.image_analyzer import analyze_restaurant_images
-from app.services.photo_fetcher import build_photo_url
+from app.services.photo_fetcher import build_photo_urls
 from app.services.places_retriever import retrieve_restaurant_candidates
 from app.services.ranker import rank_dossiers
 from app.services.report_writer import write_markdown_dossier
@@ -30,7 +30,8 @@ router = APIRouter(tags=["search"])
 async def search_restaurants(payload: SearchRequest) -> APIResponse:
     try:
         maps_api_key = payload.googleMapsApiKey
-        os.environ["GEMINI_API_KEY"] = payload.geminiApiKey
+        gemini_api_key = payload.geminiApiKey
+        os.environ["GEMINI_API_KEY"] = gemini_api_key
 
         geocode_result = await geocode_zip(payload.zipCode, maps_api_key=maps_api_key)
 
@@ -77,15 +78,28 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
                     evidence=[],
                 )
 
-            photo_urls = _build_photo_urls(candidate.photos, maps_api_key)
+            photo_urls = build_photo_urls(
+                restaurant_name=candidate.name,
+                photos=candidate.photos,
+                maps_api_key=maps_api_key,
+                max_width=900,
+                limit=3,
+            )
 
             try:
+                print(f"[VLM ROUTE] restaurant name: {candidate.name}")
+                print(f"[VLM ROUTE] number of photo_urls: {len(photo_urls)}")
+                print(
+                    f"[VLM ROUTE] first photo_url: {photo_urls[0] if photo_urls else 'N/A'}"
+                )
                 image_analysis = await analyze_restaurant_images(
                     restaurant_name=candidate.name,
                     cuisine=payload.cuisine,
                     photo_urls=photo_urls,
+                    gemini_api_key=gemini_api_key,
                 )
-            except Exception:
+            except Exception as exc:
+                print("[VLM ERROR]", repr(exc))
                 image_analysis = ImageAnalysisResult()
 
             try:
@@ -162,24 +176,6 @@ async def search_restaurants(payload: SearchRequest) -> APIResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Search pipeline failed: {exc}",
         ) from exc
-
-
-def _build_photo_urls(photos: list[dict], maps_api_key: str) -> list[str]:
-    if not photos:
-        return []
-
-    os.environ["GOOGLE_MAPS_API_KEY"] = maps_api_key
-    photo_urls: list[str] = []
-    for photo in photos[:3]:
-        reference = str(photo.get("photo_reference", "")).strip()
-        if not reference:
-            continue
-        photo_url = build_photo_url(reference, max_width=900)
-        if photo_url:
-            photo_urls.append(photo_url)
-    return photo_urls
-
-
 def _build_fallback_dossier(
     candidate_name: str,
     candidate_rating: float,
