@@ -59,6 +59,13 @@ async def build_dossier(
     candidate_signature_dishes = _clean_signature_dishes(
         llm_payload.get("signature_dishes", [])
     ) or _clean_signature_dishes(review_analysis.signature_dishes)
+    summary = _build_summary(
+        llm_summary=llm_payload.get("summary", ""),
+        review_analysis=review_analysis,
+        image_analysis=image_analysis,
+        signature_dishes=candidate_signature_dishes,
+        user_request=user_request,
+    )
 
     merged = {
         "restaurant_name": place.name,
@@ -72,6 +79,7 @@ async def build_dossier(
             "wait_impression", review_analysis.wait_impression
         ),
         "vibe": llm_payload.get("vibe", review_analysis.vibe),
+        "summary": summary,
         "why_recommended": llm_payload.get(
             "why_recommended",
             fallback_reason,
@@ -120,3 +128,60 @@ def _clean_signature_dishes(values: list[str]) -> list[str]:
         seen.add(lowered)
         cleaned.append(text)
     return cleaned
+
+
+def _is_meaningful_text(value: str | None) -> bool:
+    if value is None:
+        return False
+    cleaned = str(value).strip()
+    if not cleaned:
+        return False
+    return cleaned.lower() not in {"unknown", "not available", "n/a", "none"}
+
+
+def _build_summary(
+    llm_summary: str,
+    review_analysis: ReviewAnalysisResult,
+    image_analysis: ImageAnalysisResult,
+    signature_dishes: list[str],
+    user_request: SearchRequest,
+) -> str:
+    if _is_meaningful_text(llm_summary):
+        return str(llm_summary).strip()
+
+    parts: list[str] = []
+    if signature_dishes:
+        shown = ", ".join(signature_dishes[:2])
+        parts.append(f"Known for {shown}")
+
+    if _is_meaningful_text(review_analysis.value):
+        parts.append(str(review_analysis.value).strip())
+    if _is_meaningful_text(review_analysis.service):
+        parts.append(f"service is {str(review_analysis.service).strip()}")
+    if _is_meaningful_text(review_analysis.vibe):
+        parts.append(f"vibe feels {str(review_analysis.vibe).strip()}")
+    if _is_meaningful_text(review_analysis.wait_impression):
+        parts.append(f"wait is {str(review_analysis.wait_impression).strip()}")
+
+    if _is_meaningful_text(image_analysis.image_evidence_summary):
+        image_summary = str(image_analysis.image_evidence_summary).strip()
+        if "unavailable" not in image_summary.lower():
+            parts.append(image_summary)
+
+    fit_parts: list[str] = []
+    if _is_meaningful_text(user_request.cuisine):
+        fit_parts.append(f"{user_request.cuisine} cuisine")
+    if _is_meaningful_text(user_request.budget):
+        fit_parts.append(f"{user_request.budget} budget")
+    if user_request.partySize:
+        fit_parts.append(f"party size {user_request.partySize}")
+    if fit_parts:
+        parts.append(f"suitable for a {' and '.join(fit_parts)} plan")
+
+    if not parts:
+        return "Limited structured summary available from the current review evidence."
+
+    summary = "; ".join(parts[:4]).strip()
+    if not summary.endswith("."):
+        summary = f"{summary}."
+    return summary

@@ -111,6 +111,7 @@ class DossierResult(BaseModel):
     value: str = "Unknown"
     wait_impression: str = "Unknown"
     vibe: str = "Unknown"
+    summary: str = ""
     why_recommended: str = ""
     types: list[str] = Field(default_factory=list)
     user_rating_count: int = 0

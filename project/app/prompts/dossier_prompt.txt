@@ -15,6 +15,7 @@ Return ONLY valid JSON with this exact schema:
   "value": "short assessment",
   "wait_impression": "short assessment",
   "vibe": "short assessment",
+  "summary": "one concise evidence-grounded restaurant overview sentence",
   "why_recommended": "one concise human-sounding sentence"
 }}
 
@@ -25,4 +26,5 @@ Rules:
 4) Do not repeat user input terms verbatim unless necessary.
 5) Mention review evidence if available and image evidence if available.
 6) Do not invent facts not supported by reviews or images.
-7) Output MUST be strict valid JSON.
+7) summary should combine meaningful signals (food quality, service, value, vibe, wait, fit) without unknown placeholders.
+8) Output MUST be strict valid JSON.
