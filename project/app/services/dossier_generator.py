@@ -56,14 +56,16 @@ async def build_dossier(
         f"Matches {user_request.cuisine} preferences with solid ratings"
         f"{evidence_mention}."
     )
+    candidate_signature_dishes = _clean_signature_dishes(
+        llm_payload.get("signature_dishes", [])
+    ) or _clean_signature_dishes(review_analysis.signature_dishes)
+
     merged = {
         "restaurant_name": place.name,
         "rating": place.rating,
         "price_level": place.price_level,
         "address": place.formatted_address,
-        "signature_dishes": llm_payload.get(
-            "signature_dishes", review_analysis.signature_dishes
-        ),
+        "signature_dishes": candidate_signature_dishes,
         "service": llm_payload.get("service", review_analysis.service),
         "value": llm_payload.get("value", review_analysis.value),
         "wait_impression": llm_payload.get(
@@ -101,3 +103,20 @@ def _build_confidence(review_evidence_count: int, visual_confidence: str) -> str
     if review_evidence_count == 0 and visual == "low":
         return "low"
     return "medium"
+
+
+def _clean_signature_dishes(values: list[str]) -> list[str]:
+    cleaned: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        text = str(value).strip()
+        if not text:
+            continue
+        lowered = text.lower()
+        if lowered in {"unknown", "not available", "n/a"}:
+            continue
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        cleaned.append(text)
+    return cleaned

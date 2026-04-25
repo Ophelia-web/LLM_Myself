@@ -32,6 +32,7 @@ Required JSON schema:
 Rules:
 1) Keep each string concise and grounded in the provided evidence only.
 2) If evidence is weak, say "Unknown" for that field.
-3) signature_dishes should contain 0-5 items.
-4) Preserve evidence snippets; do not fabricate new evidence.
-5) Output MUST be strict valid JSON with exact keys.
+3) signature_dishes should contain 0-5 items and should be extracted aggressively from explicit dish mentions in evidence text.
+4) If evidence mentions dish names such as sashimi, edamame, ramen, sushi, rolls, omakase, curry, noodles, pasta, steak, dumplings, tacos, burger, pizza, include them in signature_dishes.
+5) Preserve evidence snippets; do not fabricate new evidence.
+6) Output MUST be strict valid JSON with exact keys.
