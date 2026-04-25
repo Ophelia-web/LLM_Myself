@@ -45,14 +45,14 @@ function oneSentence(text, fallback) {
 
 function formatBudgetLabel(level) {
   const labels = {
-    low: "Low ($)",
-    medium: "Medium ($$)",
-    high: "High ($$$)",
-    luxury: "Luxury ($$$$)",
-    1: "Inexpensive",
-    2: "Moderate",
-    3: "Expensive",
-    4: "Very Expensive",
+    low: "Low",
+    medium: "Medium",
+    high: "High",
+    luxury: "Luxury",
+    1: "Low",
+    2: "Medium",
+    3: "High",
+    4: "Luxury",
   };
   return labels[level] || "";
 }
@@ -119,10 +119,7 @@ function extractRecommendedDishes(signatureDishes) {
 
 function priceLevelText(priceLevel) {
   const level = Number(priceLevel || 0);
-  if (!level || level < 1 || level > 4) {
-    return "";
-  }
-  return "$".repeat(level);
+  return formatBudgetLabel(level) || "Not available";
 }
 
 function renderImageGallery(dossier, title) {
@@ -291,12 +288,10 @@ function renderCard(item, index) {
   const title = compactText(dossier.restaurant_name) || "Restaurant pick";
   const label = RANK_LABELS[index] || `#${index + 1} Top Pick`;
   const mapsUrl = mapLink(dossier);
-  const summary = compactText(
-    [dossier.service, dossier.value, dossier.vibe].filter(Boolean).join(" • ")
-  );
-  const normalizedSummary = summary || "Limited structured summary available.";
-  const priceLevel = priceLevelText(dossier.price_level);
-  const priceLabel = formatBudgetLabel(dossier.price_level);
+  const summary = compactText(dossier.summary);
+  const normalizedSummary =
+    summary || "Limited structured summary available from the current review evidence.";
+  const priceLabel = priceLevelText(dossier.price_level);
   const rating = Number(dossier.rating);
   const ratingBadge = Number.isFinite(rating) && rating > 0 ? rating.toFixed(1) : "";
   const ratingCount = formatNumber(dossier.user_rating_count);
@@ -326,7 +321,7 @@ function renderCard(item, index) {
               ? `<p class="meta-line">${escapeHtml(address)}</p>`
               : ""
           }
-          ${priceLevel ? `<p class="meta-line"><strong>Price level:</strong> ${escapeHtml(priceLevel)}${priceLabel ? ` (${escapeHtml(priceLabel)})` : ""}</p>` : ""}
+          <p class="meta-line"><strong>Price level:</strong> ${escapeHtml(priceLabel)}</p>
           <p class="meta-line"><strong>Summary:</strong> ${escapeHtml(normalizedSummary)}</p>
           ${
             recommendedDishes.length
