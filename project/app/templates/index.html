@@ -13,25 +13,30 @@
     <main class="container">
       <section class="hero card">
         <div class="hero-content">
-          <p class="eyebrow">Personalized Dining Guide</p>
-          <h1>Personalized Dining Guide</h1>
-          <p class="subtitle">Explore a lightweight LLM + RAG + VLM restaurant intelligence demo.</p>
-          <div class="hero-stickers" aria-hidden="true">
-            <img src="https://images.unsplash.com/vector-1767592996701-4408079ed440?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="" />
-            <img src="https://images.unsplash.com/vector-1754199100419-181232bd1bb9?fm=jpg&q=70&w=500&auto=format&fit=crop" alt="" />
-          </div>
+          <p class="eyebrow">PERSONALIZED DINING GUIDE</p>
+          <h1>Find restaurants that actually fit your taste, budget, and vibe.</h1>
+          <p class="subtitle">
+            A refined dining recommender that combines structured review analysis, evidence retrieval,
+            and visual signals from real restaurant photos.
+          </p>
+          <ul class="feature-list">
+            <li>LLM review synthesis</li>
+            <li>RAG evidence grounding</li>
+            <li>VLM image understanding</li>
+          </ul>
         </div>
-        <img
-          class="hero-accent"
-          src="https://images.unsplash.com/vector-1767592996701-4408079ed440?fm=jpg&q=70&w=900&auto=format&fit=crop"
-          alt="Watercolor food illustration"
-        />
+        <div class="hero-visual" aria-hidden="true">
+          <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=900&q=70" alt="" />
+          <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=70" alt="" />
+          <img src="https://images.unsplash.com/photo-1498654896293-37aacf113fd9?auto=format&fit=crop&w=900&q=70" alt="" />
+          <img src="https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=900&q=70" alt="" />
+        </div>
       </section>
 
-      <section class="form-section card">
+      <section class="search-panel card">
         <form id="search-form" class="search-form">
           <details id="advanced-settings" class="advanced-settings">
-            <summary>Advanced Settings</summary>
+            <summary>Advanced settings (optional)</summary>
             <p class="hint">Keys are stored locally in your browser.</p>
             <div class="advanced-grid">
               <label class="advanced-label">
@@ -82,11 +87,12 @@
             </label>
           </div>
 
-          <button type="submit" class="submit-btn">Find Restaurants</button>
+          <button type="submit" class="submit-btn">Find restaurants</button>
         </form>
       </section>
 
       <section class="results-section">
+        <p class="results-title">Recommendations</p>
         <div id="status" class="status" aria-live="polite"></div>
         <div id="results" class="results"></div>
       </section>
